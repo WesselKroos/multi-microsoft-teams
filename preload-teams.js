@@ -15,13 +15,23 @@ navigator.serviceWorker.getRegistrations().then(
 }
 
 const updateBadges = () => {
-  let count = 0;
+  let badge = 0;
   const badges = ([...document.querySelectorAll('.activity-badge:not(.dot-activity-badge)')]);
-  badges.forEach(badge => {
-    count += parseInt(badge.textContent, 10)
+  badges.forEach(badgeElem => {
+    badge += parseInt(badgeElem.textContent, 10)
   })
-  //console.log('Badge count:', count)
-  ipcRenderer.send('badge-count', count)
+  //console.log('Badge:', badge)
+
+  let tenantName = ''
+  const tenantNameElem = document.querySelector('.app-header-bar-tenant-name')
+  if(tenantNameElem) {
+    tenantName = tenantNameElem.textContent
+  }
+
+  ipcRenderer.send('tab-info', {
+    badge,
+    tenantName
+  })
 }
 
 document.addEventListener("DOMContentLoaded", () => {

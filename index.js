@@ -2,6 +2,21 @@ const { remote: { BrowserView, getCurrentWindow, session }, ipcRenderer } = requ
 const win = getCurrentWindow()
 //win.webContents.openDevTools()
 
+const contextMenu = require('electron-context-menu')
+contextMenu({
+  window: win,
+  prepend: (params, browserWindow) => [
+      { role: "cut" },
+      { role: "copy" },
+      { role: "paste" },
+      { role: "pasteAndMatchStyle" },
+      { role: "selectAll" },
+      { role: "reload" },
+      { role: "forceReload" }, 
+  ],
+})
+
+
 const customTitlebar = require('custom-electron-titlebar')
 const titlebar = new customTitlebar.Titlebar({
     backgroundColor: customTitlebar.Color.fromHex('#464775'),
@@ -11,14 +26,14 @@ titlebar.updateTitle(' ')
 win.setTitle('Microsoft Teams')
 
 const settings = require('electron-settings')
-let tabsAmount = settings.get('tabs.amount') || 0
-let currentTabId = settings.get('tabs.current') || 0
+const tabs = settings.get('tabs') || []
+let currentTabId = settings.get('currentTabId') || 0
 const tabViews = []
 const viewAnchor = {
   x: 68, 
   y: 30
 }
-const updateTabViewBounds = (bounds) => {
+const updateTabViewBounds = (bounds, tabId) => {
   if(!currentTabId) return
 
   if(bounds.x === -8 && bounds.y === -8) {
@@ -31,24 +46,36 @@ const updateTabViewBounds = (bounds) => {
     }
   }
 
-  const tabView = tabViews[currentTabId - 1]
+  const tabView = tabViews[tabId - 1]
   tabView.setBounds({ 
     ...viewAnchor, 
     width: bounds.width - viewAnchor.x, // - 16, 
     height: bounds.height - viewAnchor.y // - 59
   })
 }
-try {
-
 
 const openTab = (tabId) => {
   const previousTabId = currentTabId
-
   currentTabId = tabId
-  settings.set('tabs.current', tabId)
+  settings.set('currentTabId', tabId)
+
   const tab = document.querySelector(`#tab-${tabId}`)
   tab.classList.add('is-current')
-  updateTabViewBounds(win.getBounds())
+  const tabView = tabViews[tabId - 1]
+  win.addBrowserView(tabView)
+  updateTabViewBounds(win.getBounds(), tabId)
+  contextMenu({
+    window: tabView.webContents,
+    prepend: (params, browserWindow) => [
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "pasteAndMatchStyle" },
+        { role: "selectAll" },
+        { role: "reload" },
+        { role: "forceReload" }, 
+    ],
+  })
   
   if(previousTabId === tabId) return
 
@@ -58,53 +85,43 @@ const openTab = (tabId) => {
   }
   const previousTabView = tabViews[previousTabId - 1]
   if(previousTabView) {
-    previousTabView.setBounds({ 
-      ...viewAnchor, 
-      width: 0,
-      height: 0
-    })
+    win.removeBrowserView(previousTabView)
   }
 }
-const addTab = (tabId) => {
+const addTab = (tabId, tab) => {
   const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
   tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
   tabSession.setPermissionCheckHandler((webContents, permission, details) => {
-    console.log('CHECK FOR PERMISSION:', permission)
+    //console.log('CHECK FOR PERMISSION:', permission)
     return true
   })
   tabSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
-    console.log('REQUEST FOR PERMISSION:', permission)
+    //console.log('REQUEST FOR PERMISSION:', permission)
     callback(true)
   })
   const path = require('path')
   tabSession.setPreloads([path.join(__dirname, 'preload-teams.js')]);
   const webPreferences = {
-    sandbox: true,
+    // sandbox: true,
     session: tabSession,
-    enableRemoteModule: false,
-    experimentalFeatures: true,
-    webSecurity: false,
-    allowRunningInsecureContent: true,
-    contextIsolation: false,
-    nodeIntegration: false,
-    nodeIntegrationInWorker: false,
-    plugins: true
+    // enableRemoteModule: false,
+    // experimentalFeatures: true,
+    // webSecurity: false,
+    // allowRunningInsecureContent: true,
+    // contextIsolation: false,
+    // nodeIntegration: false,
+    // nodeIntegrationInWorker: false,
+    // plugins: true
   }
   let view = new BrowserView({
     webPreferences
   })
-  win.addBrowserView(view)
   tabViews.push(view)
-  const bounds = win.getBounds()
-  view.setBounds({ 
-    ...viewAnchor,
-    x: (bounds.width) - tabId,
-    y: (bounds.height - viewAnchor.y) + 1, //Hack to load them all
-    width: bounds.width - viewAnchor.x, // - 16, 
-    height: bounds.height - viewAnchor.y // - 59
-  })
+  win.addBrowserView(view) //Hack: Temporarily add to current Window to load the page
+  updateTabViewBounds(win.getBounds(), tabId) //Hack: Temporarily render in current size to load the page
   //view.webContents.openDevTools()
   view.webContents.loadURL('https://teams.microsoft.com/')
+  win.removeBrowserView(view)
   //{"extraHeaders" : "pragma: no-cache\n"}
   // view.webContents.on('did-redirect-navigation', () => {
   //   console.log('REDIRECTED!')
@@ -130,30 +147,42 @@ const addTab = (tabId) => {
   //   };
   // `)
 
-  const tab = document.createElement('button')
-  tab.setAttribute('id', `tab-${tabId}`)
-  tab.setAttribute('class', 'tab')
-  tab.setAttribute('tabId', tabId)
-  tab.textContent = tabId
-  tab.addEventListener('click', () => {
+  const tabBtn = document.createElement('button')
+  tabBtn.setAttribute('id', `tab-${tabId}`)
+  tabBtn.setAttribute('class', 'tab')
+  tabBtn.setAttribute('tabId', tabId)
+  tabBtn.setAttribute('title', tab.tenantName || '') 
+  tabBtn.addEventListener('click', () => {
     openTab(tabId)
   })
-  tab.addEventListener('contextmenu', e => {
+  tabBtn.addEventListener('contextmenu', e => {
     //todo: remove tab & session
   })
-  document.querySelector('#tabs-list').appendChild(tab)
+  document.querySelector('#tabs-list').appendChild(tabBtn)
+
+  const tabIcon = document.createElement('span')
+  tabIcon.setAttribute('class', 'tab__icon')
+  tabIcon.textContent = (tab.tenantName || '..').substr(0, 2)
+  tabBtn.appendChild(tabIcon)
   
-  view.webContents.addListener("ipc-message", (event, channel, count) => {
-    if(channel !== 'badge-count') return
+  view.webContents.addListener("ipc-message", (event, channel, { badge, tenantName }) => {
+    if(channel !== 'tab-info') return
     //console.log('Received badge count:', tabId, count)
 
-    tab.setAttribute('data-count', count)
-    if(count) {
-      tab.classList.add('tab--has-badge')
-    } else {
-      tab.classList.remove('tab--has-badge')
+    if(tenantName) {
+      tabs[tabId - 1].tenantName = tenantName
+      tabBtn.setAttribute('title', tenantName) 
+      tabBtn.children[0].textContent = tenantName.substr(0, 2)
+      settings.set('tabs', tabs)
     }
-  });
+
+    tabBtn.setAttribute('data-count', badge)
+    if(badge) {
+      tabBtn.classList.add('tab--has-badge')
+    } else {
+      tabBtn.classList.remove('tab--has-badge')
+    }
+  })
 }
 
 
@@ -161,8 +190,8 @@ const addTab = (tabId) => {
 win.on('resize', (_event, newBounds) => updateTabViewBounds(win.getBounds()))
 
 window.onload = setTimeout(() => {
-  for(let i = 1; i <= tabsAmount; i++) {
-    addTab(i)
+  for(let i = 0; i < tabs.length; i++) {
+    addTab(i + 1, tabs[i])
   }
   if(currentTabId)
     openTab(currentTabId)
@@ -171,14 +200,14 @@ window.onload = setTimeout(() => {
 
 document.querySelector('#add-tab').addEventListener('click', () => {
   const tabId = tabViews.length + 1
-  addTab(tabId)
+  const tab = {
+    id: tabId,
+    tenantName: '..'
+  }
+  addTab(tabId, tab)
 
-  tabsAmount++
-  settings.set('tabs.amount', tabsAmount)
+  tabs.push(tab)
+  settings.set('tabs', tabs)
 
   openTab(tabId)
 })
-
-} catch(ex) {
-  console.error(ex)
-}
