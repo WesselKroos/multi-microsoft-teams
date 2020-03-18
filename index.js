@@ -146,6 +146,7 @@ const addTab = (tabId, tab) => {
   tabIcon.setAttribute('class', 'tab__icon')
   tabBtn.appendChild(tabIcon)
   
+  //view.webContents.openDevTools()
   view.webContents.on('dom-ready', () => {
     if(tabIcon.innerHTML === '!') return
 

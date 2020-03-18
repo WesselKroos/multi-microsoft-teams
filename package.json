@@ -1,21 +1,42 @@
 {
-  "name": "microsoft-teamss",
+  "name": "microsoft-teams-multitenant",
   "version": "1.0.0",
   "description": "Keep up to date with all Microsoft Teams tenants/organisations. Receive notifications from all, without a switch.",
   "main": "main.js",
-  "dependencies": {
-    "electron": "^8.1.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "custom-electron-titlebar": "^3.2.2-hotfix62",
+    "electron": "^8.1.1",
+    "electron-builder": "^22.4.1",
     "electron-context-menu": "^0.16.0",
     "electron-settings": "^3.2.0",
     "electron-windows-badge": "^1.0.5"
   },
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "electron-builder build"
   },
-  "author": "",
+  "build": {
+    "appId": "microsoft.teams.multitenant",
+    "productName": "Microsoft Teams - Multitenant",
+    "copyright": "Copyright © 2020 Wessel Kroos",
+    "buildVersion": "1.0.0",
+    "win": {
+      "icon": "./build/icon.ico",
+      "publisherName": "Wessel Kroos",
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "author": "Wessel Kroos",
   "license": "ISC"
 }
