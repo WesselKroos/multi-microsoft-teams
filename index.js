@@ -1,4 +1,4 @@
-const { remote: { BrowserView, getCurrentWindow, session }} = require('electron')
+const { remote: { BrowserView, getCurrentWindow, session }, ipcRenderer } = require('electron')
 const win = getCurrentWindow()
 //win.webContents.openDevTools()
 
@@ -7,7 +7,8 @@ const titlebar = new customTitlebar.Titlebar({
     backgroundColor: customTitlebar.Color.fromHex('#464775'),
     unfocusEffect: false
 })
-titlebar.updateTitle('Microsoft Teams')
+titlebar.updateTitle(' ')
+win.setTitle('Microsoft Teams')
 
 const settings = require('electron-settings')
 let tabsAmount = settings.get('tabs.amount') || 0
@@ -46,14 +47,14 @@ const openTab = (tabId) => {
   currentTabId = tabId
   settings.set('tabs.current', tabId)
   const tab = document.querySelector(`#tab-${tabId}`)
-  tab.setAttribute('class', 'tab is-current')
+  tab.classList.add('is-current')
   updateTabViewBounds(win.getBounds())
   
   if(previousTabId === tabId) return
 
   const previousTab = document.querySelector(`#tab-${previousTabId}`)
   if(previousTab) {
-    previousTab.setAttribute('class', 'tab')
+    previousTab.classList.remove('is-current')
   }
   const previousTabView = tabViews[previousTabId - 1]
   if(previousTabView) {
@@ -141,6 +142,18 @@ const addTab = (tabId) => {
     //todo: remove tab & session
   })
   document.querySelector('#tabs-list').appendChild(tab)
+  
+  view.webContents.addListener("ipc-message", (event, channel, count) => {
+    if(channel !== 'badge-count') return
+    //console.log('Received badge count:', tabId, count)
+
+    tab.setAttribute('data-count', count)
+    if(count) {
+      tab.classList.add('tab--has-badge')
+    } else {
+      tab.classList.remove('tab--has-badge')
+    }
+  });
 }
 
 

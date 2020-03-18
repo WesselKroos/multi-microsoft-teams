@@ -1,4 +1,4 @@
-const { app, BrowserView, BrowserWindow, session, Menu } = require('electron')
+const { app, BrowserView, BrowserWindow, session, Menu, ipcMain } = require('electron')
 app.allowRendererProcessReuse = false
 app.setAppUserModelId(process.execPath)
 // const path = require('path')
@@ -59,8 +59,8 @@ app.whenReady()
   .then(function() {
     Menu.setApplicationMenu(null)
     let win = new BrowserWindow({ 
-      width: 1280, 
-      height: 1000,
+      width: 1920, 
+      height: 1100,
       title: 'Microsoft Teams',
       webPreferences: {
         nodeIntegration: true
@@ -78,3 +78,8 @@ app.whenReady()
     //win.webContents.openDevTools()
     //addTab('1')
   })
+
+// ipcMain.handle('badge-count', async (event, someArgument) => {
+//   console.log('Received badge count:', someArgument)
+//   return 10
+// })

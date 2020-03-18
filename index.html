@@ -18,7 +18,7 @@
     .bar {
       width: 68px;
       height: calc(100vh - 30px);
-      background: rgb(35, 36, 45);
+      background: #2f3042;
       display: flex;
       flex-direction: column;
     }
@@ -68,6 +68,33 @@
       position: absolute;
       top: 0;
       width: 4px;
+    }
+
+    .tab--has-badge::after {
+      content: attr(data-count);
+      position: absolute;
+      right: 12px;
+      top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #33344a;
+      border-color: #2f3042;
+      border-radius: 50%;
+      line-height: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #cc4a31;
+      color: #fff;
+    }
+    .tab.tab--has-badge:hover::after,
+    .tab.tab--has-badge.is-current::after {
+      border-color: #37394f;
+    }
+    .tab.tab--has-badge.is-current:hover::after {
+      border-color: #535489;
     }
 
     ul {
