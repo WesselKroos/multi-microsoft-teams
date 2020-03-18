@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page</title>
+  <title>Microsoft Teams - Multitenant</title>
   <style>
     * {
       font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
@@ -55,11 +55,16 @@
       height: 100%;
       overflow: hidden;
     }
+    .tab__icon--has-error {
+      color: #f43;
+    }
 
     .tab--add {
       height: 48px;
-      padding-bottom: 18px;
+      padding-bottom: 12px;
       background: #464775;
+      font-size: 15px;
+      font-weight: normal;
     }
     .tab--add:hover {
       background: #6264a7;
@@ -109,6 +114,25 @@
       border-color: #535489;
     }
 
+    .tab__loading {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      border-top-color: transparent;
+      animation: rotate var(--animation-start-time) linear infinite;
+    }
+
+    @keyframes rotate {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
     ul {
       display: flex;
       flex-direction: column;
@@ -124,7 +148,7 @@
 </head>
 <body>
   <div class="bar">
-    <button class="tab tab--add" id="add-tab">+</button>
+    <button class="tab tab--add" id="add-tab" title="Add a new tenant">+</button>
     <div id="tabs-list">
 
     </div>
