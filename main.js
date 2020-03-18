@@ -1,4 +1,4 @@
-const { app, BrowserView, BrowserWindow, session, Menu, ipcMain, Tray, nativeImage } = require('electron')
+const { app, BrowserView, BrowserWindow, session, Menu, ipcMain, nativeImage } = require('electron')
 app.allowRendererProcessReuse = false
 
 app.setAppUserModelId(process.execPath)
@@ -83,8 +83,8 @@ app.whenReady()
     const WindowsBadge = require('electron-windows-badge')
     new WindowsBadge(win, {
       color: '#dc2a11',
-      font: '10px Segoe UI',
-      radius: 20
+      font: 'Segoe UI',
+      fit: false
     })
     // win.on('will-resize', (_event, newBounds) => updateViewBounds(newBounds))
     // win.on('resize', (_event, newBounds) => updateViewBounds(win.getBounds()))
