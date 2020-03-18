@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page</title>
+  <style>
+    * {
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+      font-size: 18px;
+    }
+
+    html,
+    body {
+      background: #f3f2f1;
+    }
+
+    .bar {
+      width: 68px;
+      height: calc(100vh - 30px);
+      background: rgb(35, 36, 45);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tab {
+      -webkit-appearance: none;
+      position: relative;
+      margin-bottom: 0;
+      width: 68px;
+      height: 56px;
+      border: none;
+      padding: 8px 14px;
+      line-height: 0;
+      background: transparent;
+      color: #f3f2f1;
+      font-size: 30px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      outline: none;
+    }
+    .tab:hover {
+      background: rgba(98,100,167,.25);
+    }
+
+    .tab--add {
+      height: 48px;
+      padding-bottom: 18px;
+      background: #464775;
+    }
+    .tab--add:hover {
+      background: #6264a7;
+    }
+
+    .tab.is-current {
+      background: linear-gradient(180deg,rgba(60,62,93,.6),rgba(60,62,93,0) 33%),linear-gradient(225deg,rgba(60,62,93,.6) 33%,rgba(60,62,93,0) 70%),linear-gradient(270deg,rgba(60,62,93,.6) 70%,rgba(60,62,93,0) 94%),linear-gradient(315deg,rgba(60,62,93,.6) 33%,rgba(60,62,93,0) 70%),linear-gradient(360deg,rgba(60,62,93,.6),rgba(60,62,93,0) 33%),linear-gradient(90deg,rgba(98,100,167,.75) 6%,rgba(98,100,167,0) 70%);
+      color: #fff;
+    }
+    .tab.is-current:hover {
+      background: rgba(98,100,167,.7);
+    }
+    .tab.is-current::before {
+      content: '';
+      background: #e2e2f6;
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 4px;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      list-style: none;
+    }
+
+    li {
+      display: block;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <button class="tab tab--add" id="add-tab">+</button>
+    <div id="tabs-list">
+
+    </div>
+  </div>
+</body>
+<script src="./index.js"></script>
+</html>

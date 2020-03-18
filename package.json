@@ -1,0 +1,19 @@
+{
+  "name": "microsoft-teamss",
+  "version": "1.0.0",
+  "description": "Keep up to date with all Microsoft Teams tenants/organisations. Receive notifications from all, without a switch.",
+  "main": "main.js",
+  "dependencies": {
+    "electron": "^8.1.1"
+  },
+  "devDependencies": {
+    "custom-electron-titlebar": "^3.2.2-hotfix62",
+    "electron-settings": "^3.2.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
