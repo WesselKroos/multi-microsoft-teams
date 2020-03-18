@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "Keep up to date with all Microsoft Teams tenants/organisations. Receive notifications from all, without a switch.",
   "main": "main.js",
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
     "custom-electron-titlebar": "^3.2.2-hotfix62",
-    "electron": "^8.1.1",
-    "electron-builder": "^22.4.1",
     "electron-context-menu": "^0.16.0",
     "electron-settings": "^3.2.0",
     "electron-windows-badge": "^1.0.5"
+  },
+  "devDependencies": {
+    "electron": "^8.1.1",
+    "electron-builder": "^22.4.1"
   },
   "scripts": {
     "start": "electron .",
