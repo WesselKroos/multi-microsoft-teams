@@ -16,15 +16,15 @@ contextMenu({
   ],
 })
 
-
 const customTitlebar = require('custom-electron-titlebar')
 const titlebar = new customTitlebar.Titlebar({
     backgroundColor: customTitlebar.Color.fromHex('#464775'),
     unfocusEffect: false
 })
-titlebar.updateTitle(' ')
-win.setTitle('Microsoft Teams')
+titlebar.updateTitle('Microsoft Multitenant Teams')
+win.setTitle('Microsoft Multitenant Teams')
 
+let currentTabsBadge = 0
 const settings = require('electron-settings')
 const tabs = settings.get('tabs') || []
 let currentTabId = settings.get('currentTabId') || 0
@@ -167,13 +167,11 @@ const addTab = (tabId, tab) => {
   
   view.webContents.addListener("ipc-message", (event, channel, { badge, tenantName }) => {
     if(channel !== 'tab-info') return
-    //console.log('Received badge count:', tabId, count)
 
     if(tenantName) {
       tabs[tabId - 1].tenantName = tenantName
       tabBtn.setAttribute('title', tenantName) 
       tabBtn.children[0].textContent = tenantName.substr(0, 2)
-      settings.set('tabs', tabs)
     }
 
     tabBtn.setAttribute('data-count', badge)
@@ -182,12 +180,27 @@ const addTab = (tabId, tab) => {
     } else {
       tabBtn.classList.remove('tab--has-badge')
     }
+    tab.badge = badge
+
+    settings.set('tabs', tabs)
+
+    const tabsBadge = tabs.reduce((badge, tab) => {
+      if(tab.badge)
+        badge += tab.badge
+      return badge
+    }, 0)
+    ipcRenderer.sendSync('update-badge', tabsBadge || null)
+    if(currentTabsBadge !== tabsBadge) {
+      currentTabsBadge = tabsBadge
+      if(tabsBadge && !document.hasFocus())
+        win.flashFrame(true)
+    }
   })
 }
 
 
 //win.on('will-resize', (_event, newBounds) => updateTabViewBounds(newBounds))
-win.on('resize', (_event, newBounds) => updateTabViewBounds(win.getBounds()))
+win.on('resize', (_event, newBounds) => updateTabViewBounds(win.getBounds(), currentTabId))
 
 window.onload = setTimeout(() => {
   for(let i = 0; i < tabs.length; i++) {

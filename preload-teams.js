@@ -14,13 +14,14 @@ navigator.serviceWorker.getRegistrations().then(
   })
 }
 
+let updateBadgesTimeout = undefined
 const updateBadges = () => {
   let badge = 0;
   const badges = ([...document.querySelectorAll('.activity-badge:not(.dot-activity-badge)')]);
   badges.forEach(badgeElem => {
-    badge += parseInt(badgeElem.textContent, 10)
+    let count = parseInt(badgeElem.textContent, 10)
+    badge += (isNaN(count) ? 1 : count)
   })
-  //console.log('Badge:', badge)
 
   let tenantName = ''
   const tenantNameElem = document.querySelector('.app-header-bar-tenant-name')
@@ -32,6 +33,12 @@ const updateBadges = () => {
     badge,
     tenantName
   })
+}
+const scheduleUpdateBadges = () => {
+  if(updateBadgesTimeout) {
+    clearTimeout(updateBadgesTimeout)
+  }
+  updateBadgesTimeout = setTimeout(updateBadges, 500)
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -48,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // })
         //if(addedBadges.length) {
         //  console.log('Badges added: ', addedBadges.length)
-          updateBadges()
+          scheduleUpdateBadges()
         //}
       }
       // else if (mutation.type === 'attributes') {

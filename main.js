@@ -1,6 +1,12 @@
-const { app, BrowserView, BrowserWindow, session, Menu, ipcMain } = require('electron')
+const { app, BrowserView, BrowserWindow, session, Menu, ipcMain, Tray, nativeImage } = require('electron')
 app.allowRendererProcessReuse = false
+
 app.setAppUserModelId(process.execPath)
+
+const path = require('path')
+const iconPath = path.join(__dirname, "build", "icon.png")
+const iconImage = nativeImage.createFromPath(iconPath)
+
 // const path = require('path')
 
 // let win = undefined
@@ -61,7 +67,8 @@ app.whenReady()
     let win = new BrowserWindow({ 
       width: 1920, 
       height: 1100,
-      title: 'Microsoft Teams',
+      title: 'Microsoft Multitenant Teams',
+      icon: iconImage,
       webPreferences: {
         nodeIntegration: true
       }, 
@@ -72,6 +79,13 @@ app.whenReady()
       win = null
     })
     
+
+    const WindowsBadge = require('electron-windows-badge')
+    new WindowsBadge(win, {
+      color: '#dc2a11',
+      font: '10px Segoe UI',
+      radius: 20
+    })
     // win.on('will-resize', (_event, newBounds) => updateViewBounds(newBounds))
     // win.on('resize', (_event, newBounds) => updateViewBounds(win.getBounds()))
     
