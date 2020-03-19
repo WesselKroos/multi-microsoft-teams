@@ -187,6 +187,18 @@ const addTab = (tabId, tab) => {
 
     tabIcon.innerHTML = '..'
     view.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
+
+    view.webContents.executeJavaScript(`
+      const dontShowAgainInputCheckbox = document.querySelector('[name="DontShowAgain"]');
+      if(dontShowAgainInputCheckbox) {
+        dontShowAgainInputCheckbox.checked = true;
+
+        const inputSubmit = document.querySelector('[type="submit"]');
+        if(inputSubmit) {
+          inputSubmit.click();
+        }
+      }
+    `)
   })
 
   view.webContents.on('new-window', (e, url) => {
