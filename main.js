@@ -1,15 +1,21 @@
 const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen } = require('electron')
+const path = require('path')
 const settings = require('electron-settings')
-app.allowRendererProcessReuse = false
 
+app.allowRendererProcessReuse = false
 app.setAppUserModelId(process.execPath)
 
-const path = require('path')
-const iconPath = path.join(__dirname, "build", "icon.png")
-const iconImage = nativeImage.createFromPath(iconPath)
 
-app.whenReady()
-  .then(function() {
+const singleInstanceLock = app.requestSingleInstanceLock()
+if (!singleInstanceLock) {
+  app.quit()
+} else {
+  let win;
+
+  app.on('ready', () => {
+    const iconPath = path.join(__dirname, "build", "icon.png")
+    const iconImage = nativeImage.createFromPath(iconPath)
+    
     const winBounds = settings.get('win.bounds') || { width: 1920, height: 1080 }
     const screenBounds = screen.getPrimaryDisplay().workAreaSize
     winBounds.width = Math.min(screenBounds.width, winBounds.width)
@@ -24,7 +30,7 @@ app.whenReady()
     }
 
     Menu.setApplicationMenu(null)
-    let win = new BrowserWindow({ 
+    win = new BrowserWindow({ 
       minWidth: 788,
       minHeight: 530,
       width: winBounds.width, 
@@ -61,9 +67,19 @@ app.whenReady()
       font: 'Segoe UI',
       fit: false
     })
+
+    // ipcMain.handle('badge-count', async (event, someArgument) => {
+    //   console.log('Received badge count:', someArgument)
+    //   return 10
+    // })
   })
 
-// ipcMain.handle('badge-count', async (event, someArgument) => {
-//   console.log('Received badge count:', someArgument)
-//   return 10
-// })
+  // Someone tried to run a second instance, we should focus our window.
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (!win) return
+
+    if (win.isMinimized()) 
+      win.restore()
+    win.focus()
+  })
+}
