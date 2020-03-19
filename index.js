@@ -5,14 +5,9 @@ const win = getCurrentWindow()
 const contextMenu = require('electron-context-menu')
 contextMenu({
   window: win,
-  prepend: (params, browserWindow) => [
-      { role: "cut" },
-      { role: "copy" },
-      { role: "paste" },
-      { role: "pasteAndMatchStyle" },
-      { role: "selectAll" },
-      { role: "reload" },
-      { role: "forceReload" }, 
+  append: (params, contextWindow) => [
+    { role: "reload" },
+    { role: "forceReload" },
   ],
 })
 
@@ -66,14 +61,53 @@ const openTab = (tabId) => {
   updateTabViewBounds(win.getBounds(), tabId)
   contextMenu({
     window: tabView.webContents,
-    prepend: (params, browserWindow) => [
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        { role: "pasteAndMatchStyle" },
-        { role: "selectAll" },
-        { role: "reload" },
-        { role: "forceReload" }, 
+    append: (params, contextWindow) => [
+      // { role: "cut" },
+      // { role: "copy" },
+      // { role: "paste" },
+      { type: 'separator' },
+      { 
+        label: 'Reload',
+        submenu: [
+          { 
+            label: 'Reload',
+            click: async () => {
+              tabView.webContents.reload()
+            }
+          },
+          { type: 'separator' },
+          { 
+            label: 'Clear cache -> Reload',
+            click: async () => {
+              await tabView.webContents.session.clearAuthCache()
+              await tabView.webContents.session.clearCache()
+              tabView.webContents.reload()
+            }
+          },
+          {
+            label: 'Clear data and cache -> Reload',
+            click: async () => {
+              await tabView.webContents.session.clearAuthCache()
+              await tabView.webContents.session.clearCache()
+              //await tabView.webContents.session.clearHostResolverCache()
+              await tabView.webContents.session.clearStorageData({
+                storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'serviceworkers', 'cachestorage']
+              })
+              tabView.webContents.reload()
+            }
+          },
+          {
+            label: 'Logout -> Reload',
+            click: async () => {
+              await tabView.webContents.session.clearAuthCache()
+              await tabView.webContents.session.clearCache()
+              //await tabView.webContents.session.clearHostResolverCache()
+              await tabView.webContents.session.clearStorageData()
+              tabView.webContents.reload()
+            }
+          }
+        ]
+      }
     ],
   })
   
@@ -108,6 +142,7 @@ const addTab = (tabId, tab) => {
     // experimentalFeatures: true,
     // webSecurity: false,
     // allowRunningInsecureContent: true,
+    // allowDisplayingInsecureContent: true,
     // contextIsolation: false,
     // nodeIntegration: false,
     // nodeIntegrationInWorker: false,
@@ -163,69 +198,70 @@ const addTab = (tabId, tab) => {
     tabIcon.innerHTML = '!'
     tabIcon.classList.add('tab__icon--has-error')
     try {
-      view.webContents.insertText('Reload page?')
-      view.webContents.insertCSS(`
-        body {
-          height: 100vh;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Segoe UI';
-          background: #f3f2f1;
-          color: #000;
-        }
-        div {
-          display: flex;
-          flex-direction: column;
-          width: 300px;
-          max-width: calc(100% - 50px);
-          padding: 20px;
-          border-radius: 4px;
-          font-size: 12px;
-          background: #fff;
-        }
-        h1 {
-          font-size: 20px;
-          display: table-cell;
-          margin: 0 auto;
-        }
-        button {
-          -webkit-appearance: none;
-          display: table-cell;
-          margin: 20px auto;
-          box-shadow: rgba(0, 0, 0, 0.75) 0px 1px 3px 0px;
-          border: none;
-          border-radius: 2px;
-          padding: 10px 20px;
-          background: #464775;
-          color: #fff;
-          cursor: pointer;
-          outline: none;
-        }
-        button:hover {
-          background: #6264a7;
-        }
-        button:hover {
-          box-shadow: rgba(0, 0, 0, 0.75) 0px 1px 3px 0px inset;
-        }
-        p {
-          border-top: 2px solid #f3f2f1;
-          padding: 20px 20px 0;
-          margin: 0 -20px;
-          width: calc(100% + 40px);
-        }
-      `)
       view.webContents.executeJavaScript(`
+        if(document.head)
+          document.head.remove();
+
         document.body.innerHTML = \`
+          <style>
+            body {
+              height: 100vh;
+              margin: 0;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-family: 'Segoe UI';
+              background: #f3f2f1;
+              color: #000;
+            }
+            div {
+              display: flex;
+              flex-direction: column;
+              width: 300px;
+              max-width: calc(100% - 50px);
+              padding: 20px;
+              border-radius: 4px;
+              font-size: 12px;
+              background: #fff;
+            }
+            h1 {
+              font-size: 20px;
+              display: table-cell;
+              margin: 0 auto;
+            }
+            button {
+              -webkit-appearance: none;
+              display: table-cell;
+              margin: 20px auto;
+              box-shadow: rgba(0, 0, 0, 0.75) 0px 1px 3px 0px;
+              border: none;
+              border-radius: 2px;
+              padding: 10px 20px;
+              background: #464775;
+              color: #fff;
+              cursor: pointer;
+              outline: none;
+            }
+            button:hover {
+              background: #6264a7;
+            }
+            button:hover {
+              box-shadow: rgba(0, 0, 0, 0.75) 0px 1px 3px 0px inset;
+            }
+            p {
+              border-top: 2px solid #f3f2f1;
+              padding: 20px 20px 0;
+              margin: 0 -20px;
+              width: calc(100% + 40px);
+            }
+          </style>
           <div>
             <h1>Failed to load the page</h1>
             <button onclick="document.body.innerHTML = ''; location.reload();">click here to reload</button>
             <p>Error: ${errorDescription} <br/>URL: <a href="${validatedURL}">${validatedURL}</a></p>
           </div>
         \`;
-        document.head.remove();
       `)
     } catch(error) {
       console.error(error)
@@ -237,7 +273,7 @@ const addTab = (tabId, tab) => {
     const animStartTime = 1.5 + (Math.random());
     tabIcon.style.setProperty('--animation-start-time', animStartTime +'s');
   })
-  view.webContents.addListener("ipc-message", (event, channel, { badge, tenantName }) => {
+  view.webContents.on('ipc-message', (event, channel, { badge, tenantName }) => {
     if(channel !== 'tab-info') return
 
     if(tenantName) {
@@ -277,16 +313,14 @@ const updateBounds = (_event, newBounds) => updateTabViewBounds(win.getBounds(),
 win.on('resize', updateBounds)
 win.on('restore', updateBounds)
 
-window.onload = setTimeout(() => {
-  Object.keys(tabs).forEach(tabId => {
-    addTab(tabId, tabs[tabId])
-  })
-  if(currentTabId && Object.keys(tabs).find(tabId => tabId === currentTabId)) {
-    openTab(currentTabId)
-  } else if(Object.keys(tabs).length) {
-    openTab(Object.keys(tabs)[0])
-  }
-}, 1)
+Object.keys(tabs).forEach(tabId => {
+  addTab(tabId, tabs[tabId])
+})
+if(currentTabId && Object.keys(tabs).find(tabId => tabId === currentTabId)) {
+  openTab(currentTabId)
+} else if(Object.keys(tabs).length) {
+  openTab(Object.keys(tabs)[0])
+}
 
 
 document.querySelector('#add-tab').addEventListener('click', () => {
