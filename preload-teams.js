@@ -16,7 +16,7 @@ navigator.serviceWorker.getRegistrations().then(
 let updateBadgesTimeout = undefined
 const updateBadges = () => {
   let badge = 0;
-  const badges = ([...document.querySelectorAll('.activity-badge:not(.dot-activity-badge)')]);
+  const badges = ([...document.querySelectorAll('.app-bar .activity-badge:not(.dot-activity-badge)')]);
   badges.forEach(badgeElem => {
     let count = parseInt(badgeElem.textContent, 10)
     badge += (isNaN(count) ? 1 : count)

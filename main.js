@@ -43,13 +43,17 @@ app.whenReady()
     win.on('close', () => {
       settings.set('win.bounds', win.getBounds())
       settings.set('win.isMaximized', win.isMaximized())
+      settings.set('win.isMinimized', win.isMinimized())
     })
     win.on('closed', () => {
       win = null
     })
     if(settings.get('win.isMaximized'))
       win.maximize()
-    win.show()
+    if(settings.get('win.isMinimized'))
+      win.minimize()
+    else
+      win.show()
     
     const WindowsBadge = require('electron-windows-badge')
     new WindowsBadge(win, {

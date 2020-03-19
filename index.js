@@ -273,9 +273,9 @@ const addTab = (tabId, tab) => {
   win.removeBrowserView(view)
 }
 
-
-//win.on('will-resize', (_event, newBounds) => updateTabViewBounds(newBounds))
-win.on('resize', (_event, newBounds) => updateTabViewBounds(win.getBounds(), currentTabId))
+const updateBounds = (_event, newBounds) => updateTabViewBounds(win.getBounds(), currentTabId)
+win.on('resize', updateBounds)
+win.on('restore', updateBounds)
 
 window.onload = setTimeout(() => {
   Object.keys(tabs).forEach(tabId => {
