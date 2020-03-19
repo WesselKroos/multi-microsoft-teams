@@ -174,6 +174,8 @@ const addTab = (tabId, tab) => {
     view.destroy()
     tabSession.clearStorageData()
     tabSession.clearCache()
+
+    openTab(Object.keys(tabs)[0])
   })
   document.querySelector('#tabs-list').appendChild(tabBtn)
 
@@ -183,22 +185,28 @@ const addTab = (tabId, tab) => {
   
   //view.webContents.openDevTools()
   view.webContents.on('dom-ready', () => {
-    if(tabIcon.innerHTML === '!') return
+    if(tabIcon.innerHTML === '!') return // did-fail-load was triggered first
 
-    tabIcon.innerHTML = '..'
-    view.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
-
-    view.webContents.executeJavaScript(`
-      const dontShowAgainInputCheckbox = document.querySelector('[name="DontShowAgain"]');
-      if(dontShowAgainInputCheckbox) {
-        dontShowAgainInputCheckbox.checked = true;
-
-        const inputSubmit = document.querySelector('[type="submit"]');
-        if(inputSubmit) {
-          inputSubmit.click();
+    const url = view.webContents.getURL()
+    const teamsUrlIndex = url.indexOf('://teams.microsoft.com')
+    if(teamsUrlIndex !== -1) {
+      view.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
+    } else {
+      tabBtn.classList = 'tab'
+      tabIcon.classList = 'tab__icon'
+      tabIcon.innerHTML = '*'
+      view.webContents.executeJavaScript(`
+        const dontShowAgainInputCheckbox = document.querySelector('[name="DontShowAgain"]');
+        if(dontShowAgainInputCheckbox) {
+          dontShowAgainInputCheckbox.checked = true;
+  
+          const inputSubmit = document.querySelector('[type="submit"]');
+          if(inputSubmit) {
+            inputSubmit.click();
+          }
         }
-      }
-    `)
+      `)
+    }
   })
 
   view.webContents.on('new-window', (e, url) => {
@@ -207,8 +215,9 @@ const addTab = (tabId, tab) => {
   })
 
   view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    tabBtn.classList = 'tab'
+    tabIcon.classList = 'tab__icon tab__icon--has-error'
     tabIcon.innerHTML = '!'
-    tabIcon.classList.add('tab__icon--has-error')
     try {
       view.webContents.executeJavaScript(`
         if(document.head)
@@ -265,7 +274,6 @@ const addTab = (tabId, tab) => {
               border-top: 2px solid #f3f2f1;
               padding: 20px 20px 0;
               margin: 0 -20px;
-              width: calc(100% + 40px);
             }
           </style>
           <div>
@@ -280,7 +288,8 @@ const addTab = (tabId, tab) => {
     }
   })
   view.webContents.on('will-navigate', () => {
-    tabIcon.classList.remove('tab__icon--has-error')
+    tabBtn.classList = 'tab'
+    tabIcon.classList = 'tab__icon'
     tabIcon.innerHTML = '<span class="tab__loading"></span>'
     const animStartTime = 1.5 + (Math.random());
     tabIcon.style.setProperty('--animation-start-time', animStartTime +'s');
@@ -292,6 +301,11 @@ const addTab = (tabId, tab) => {
       tabs[tabId].tenantName = tenantName
       tabBtn.setAttribute('title', tenantName) 
       tabBtn.children[0].textContent = tenantName.substr(0, 2)
+      const tenantColorH = (tenantName.charCodeAt(0) * tenantName.charCodeAt(1)) * 49 % 360
+      tabBtn.style.setProperty('--tenant-color-h', tenantColorH)
+      tabBtn.classList.add('is-tenant')
+    } else {
+      tabBtn.classList.remove('is-tenant')
     }
 
     tabBtn.setAttribute('data-count', badge)
@@ -340,7 +354,7 @@ document.querySelector('#add-tab').addEventListener('click', () => {
 
   const tab = {
     id: highestTabId + 1,
-    tenantName: '..'
+    tenantName: ''
   }
   tabs[tab.id] = tab
   addTab(tab.id, tab)

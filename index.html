@@ -30,12 +30,12 @@
       width: 68px;
       height: 56px;
       border: none;
-      padding: 8px 14px;
+      padding: 9px 15px;
       line-height: 0;
       background: transparent;
       color: #f3f2f1;
       font-size: 30px;
-      font-weight: bold;
+      font-weight: 600;
       text-align: center;
       cursor: pointer;
       outline: none;
@@ -48,15 +48,33 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 20px;
-      border-radius: 4px;
+      font-size: 16px;
+      border-radius: 50%;
       background: rgba(0,0,0,.25);
+      background: #6264a7;
+      background: rgb(70, 71, 117);
+      background: rgba(255,255,255,.9);
+
       width: 100%;
       height: 100%;
       overflow: hidden;
+      color: #1f2032;
+    }
+    .tab.is-current .tab__icon,
+    .tab:hover .tab__icon {
+      background: #fff;
+      color: #3a3c5a;
+    }
+    .tab.is-tenant .tab__icon {
+      background: hsla(var(--tenant-color-h, 0), 50%, 80%, .9);
+    }
+    .tab.is-tenant.is-current .tab__icon,
+    .tab.is-tenant:hover .tab__icon {
+      background: hsl(var(--tenant-color-h, 0), 50%, 80%);
     }
     .tab__icon--has-error {
-      color: #f43;
+      background: #cc4a31 !important;
+      color: #000;
     }
 
     .tab--add {
@@ -91,7 +109,7 @@
       content: attr(data-count);
       position: absolute;
       right: 8px;
-      top: 3px;
+      top: 2px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -116,10 +134,10 @@
 
     .tab__loading {
       display: block;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      border: 3px solid #fff;
+      border: 2px solid #1f2032;
       border-top-color: transparent;
       animation: rotate var(--animation-start-time) linear infinite;
     }
