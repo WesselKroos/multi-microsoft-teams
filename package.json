@@ -7,7 +7,8 @@
     "custom-electron-titlebar": "^3.2.2-hotfix62",
     "electron-context-menu": "^0.16.0",
     "electron-settings": "^3.2.0",
-    "electron-windows-badge": "^1.0.5"
+    "electron-windows-badge": "^1.0.5",
+    "open": "^7.0.3"
   },
   "devDependencies": {
     "electron": "^8.1.1",

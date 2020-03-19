@@ -153,6 +153,12 @@ const addTab = (tabId, tab) => {
     tabIcon.innerHTML = '..'
     view.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
   })
+
+  view.webContents.on('new-window', (e, url) => {
+    e.preventDefault()
+    require('open')(url)
+  })
+
   view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     tabIcon.innerHTML = '!'
     tabIcon.classList.add('tab__icon--has-error')
