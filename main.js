@@ -1,4 +1,5 @@
-const { app, BrowserView, BrowserWindow, session, Menu, ipcMain, nativeImage } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen } = require('electron')
+const settings = require('electron-settings')
 app.allowRendererProcessReuse = false
 
 app.setAppUserModelId(process.execPath)
@@ -9,21 +10,46 @@ const iconImage = nativeImage.createFromPath(iconPath)
 
 app.whenReady()
   .then(function() {
+    const winBounds = settings.get('win.bounds') || { width: 1920, height: 1080 }
+    const screenBounds = screen.getPrimaryDisplay().workAreaSize
+    winBounds.width = Math.min(screenBounds.width, winBounds.width)
+    winBounds.height = Math.min(screenBounds.height, winBounds.height)
+    winBounds.x = Math.max(0, winBounds.x)
+    winBounds.y = Math.max(0, winBounds.y)
+    if(winBounds.x + winBounds.width > screenBounds.width) {
+      winBounds.x = Math.max(0, screenBounds.width - winBounds.width)
+    }
+    if(winBounds.y + winBounds.height > screenBounds.height) {
+      winBounds.y = Math.max(0, screenBounds.height - winBounds.height)
+    }
+
     Menu.setApplicationMenu(null)
     let win = new BrowserWindow({ 
-      width: 1920, 
-      height: 1100,
+      minWidth: 788,
+      minHeight: 530,
+      width: winBounds.width, 
+      height: winBounds.height,
+      x: winBounds.x,
+      y: winBounds.y,
+      show: false,
+      frame: false,
       title: 'Microsoft Teams - Multitenant',
       icon: iconImage,
       webPreferences: {
         nodeIntegration: true
-      }, 
-      frame: false
+      }
     })
     win.loadFile('index.html')
+    win.on('close', () => {
+      settings.set('win.bounds', win.getBounds())
+      settings.set('win.isMaximized', win.isMaximized())
+    })
     win.on('closed', () => {
       win = null
     })
+    if(settings.get('win.isMaximized'))
+      win.maximize()
+    win.show()
     
     const WindowsBadge = require('electron-windows-badge')
     new WindowsBadge(win, {
