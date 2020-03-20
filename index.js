@@ -54,11 +54,56 @@ const openTab = (tabId) => {
   currentTabId = tabId
   settings.set('currentTabId', tabId)
 
-  const tab = document.querySelector(`#tab-${tabId}`)
-  tab.classList.add('is-current')
+  const tabBtn = document.querySelector(`#tab-${tabId}`)
+  tabBtn.classList.add('is-current')
   const tabView = tabViews[tabId]
   win.addBrowserView(tabView)
   updateTabViewBounds(win.getBounds(), tabId)
+  
+  if(previousTabId === tabId) return
+
+  const previousTab = document.querySelector(`#tab-${previousTabId}`)
+  if(previousTab) {
+    previousTab.classList.remove('is-current')
+  }
+  const previousTabView = tabViews[previousTabId]
+  if(previousTabView) {
+    win.removeBrowserView(previousTabView)
+  }
+}
+const addTab = (tabId, tab) => {
+  const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
+  tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
+  tabSession.setPermissionCheckHandler((webContents, permission, details) => {
+    //console.log('CHECK FOR PERMISSION:', permission)
+    return true
+  })
+  tabSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    //console.log('REQUEST FOR PERMISSION:', permission)
+    callback(true)
+  })
+  const path = require('path')
+  tabSession.setPreloads([path.join(__dirname, 'preload-teams.js')]);
+  const webPreferences = {
+    // sandbox: true,
+    session: tabSession,
+    // enableRemoteModule: false,
+    // experimentalFeatures: true,
+    // webSecurity: false,
+    // allowRunningInsecureContent: true,
+    // allowDisplayingInsecureContent: true,
+    // contextIsolation: false,
+    // nodeIntegration: false,
+    // nodeIntegrationInWorker: false,
+    // plugins: true
+  }
+  let tabView = new BrowserView({
+    webPreferences
+  })
+  tabViews[tabId] = tabView
+  win.addBrowserView(tabView) //Hack: Temporarily add to current Window to load the page
+  updateTabViewBounds(win.getBounds(), tabId) //Hack: Temporarily render in current size to load the page
+
   contextMenu({
     window: tabView.webContents,
     append: (params, contextWindow) => [
@@ -110,50 +155,6 @@ const openTab = (tabId) => {
       }
     ],
   })
-  
-  if(previousTabId === tabId) return
-
-  const previousTab = document.querySelector(`#tab-${previousTabId}`)
-  if(previousTab) {
-    previousTab.classList.remove('is-current')
-  }
-  const previousTabView = tabViews[previousTabId]
-  if(previousTabView) {
-    win.removeBrowserView(previousTabView)
-  }
-}
-const addTab = (tabId, tab) => {
-  const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
-  tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
-  tabSession.setPermissionCheckHandler((webContents, permission, details) => {
-    //console.log('CHECK FOR PERMISSION:', permission)
-    return true
-  })
-  tabSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
-    //console.log('REQUEST FOR PERMISSION:', permission)
-    callback(true)
-  })
-  const path = require('path')
-  tabSession.setPreloads([path.join(__dirname, 'preload-teams.js')]);
-  const webPreferences = {
-    // sandbox: true,
-    session: tabSession,
-    // enableRemoteModule: false,
-    // experimentalFeatures: true,
-    // webSecurity: false,
-    // allowRunningInsecureContent: true,
-    // allowDisplayingInsecureContent: true,
-    // contextIsolation: false,
-    // nodeIntegration: false,
-    // nodeIntegrationInWorker: false,
-    // plugins: true
-  }
-  let view = new BrowserView({
-    webPreferences
-  })
-  tabViews[tabId] = view
-  win.addBrowserView(view) //Hack: Temporarily add to current Window to load the page
-  updateTabViewBounds(win.getBounds(), tabId) //Hack: Temporarily render in current size to load the page
 
   const tabBtn = document.createElement('button')
   tabBtn.setAttribute('id', `tab-${tabId}`)
@@ -171,7 +172,7 @@ const addTab = (tabId, tab) => {
 
     document.querySelector('#tabs-list').removeChild(tabBtn)
 
-    view.destroy()
+    tabView.destroy()
     tabSession.clearStorageData()
     tabSession.clearCache()
 
@@ -183,19 +184,19 @@ const addTab = (tabId, tab) => {
   tabIcon.setAttribute('class', 'tab__icon')
   tabBtn.appendChild(tabIcon)
   
-  //view.webContents.openDevTools()
-  view.webContents.on('dom-ready', () => {
+  //tabView.webContents.openDevTools()
+  tabView.webContents.on('dom-ready', () => {
     if(tabIcon.innerHTML === '!') return // did-fail-load was triggered first
 
-    const url = view.webContents.getURL()
+    const url = tabView.webContents.getURL()
     const teamsUrlIndex = url.indexOf('://teams.microsoft.com')
     if(teamsUrlIndex !== -1) {
-      view.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
+      tabView.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
     } else {
-      tabBtn.classList = 'tab'
+      tabBtn.classList = 'tab' + (tabBtn.classList.contains('is-current') ? ' is-current' : '')
       tabIcon.classList = 'tab__icon'
       tabIcon.innerHTML = '*'
-      view.webContents.executeJavaScript(`
+      tabView.webContents.executeJavaScript(`
         const dontShowAgainInputCheckbox = document.querySelector('[name="DontShowAgain"]');
         if(dontShowAgainInputCheckbox) {
           dontShowAgainInputCheckbox.checked = true;
@@ -209,17 +210,17 @@ const addTab = (tabId, tab) => {
     }
   })
 
-  view.webContents.on('new-window', (e, url) => {
+  tabView.webContents.on('new-window', (e, url) => {
     e.preventDefault()
     require('open')(url)
   })
 
-  view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    tabBtn.classList = 'tab'
+  tabView.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    tabBtn.classList = 'tab' + (tabBtn.classList.contains('is-current') ? ' is-current' : '')
     tabIcon.classList = 'tab__icon tab__icon--has-error'
     tabIcon.innerHTML = '!'
     try {
-      view.webContents.executeJavaScript(`
+      tabView.webContents.executeJavaScript(`
         if(document.head)
           document.head.remove();
 
@@ -287,14 +288,14 @@ const addTab = (tabId, tab) => {
       console.error(error)
     }
   })
-  view.webContents.on('will-navigate', () => {
-    tabBtn.classList = 'tab'
+  tabView.webContents.on('will-navigate', () => {
+    tabBtn.classList = 'tab' + (tabBtn.classList.contains('is-current') ? ' is-current' : '')
     tabIcon.classList = 'tab__icon'
     tabIcon.innerHTML = '<span class="tab__loading"></span>'
     const animStartTime = 1.5 + (Math.random());
     tabIcon.style.setProperty('--animation-start-time', animStartTime +'s');
   })
-  view.webContents.on('ipc-message', (event, channel, { badge, tenantName }) => {
+  tabView.webContents.on('ipc-message', (event, channel, { badge, tenantName }) => {
     if(channel !== 'tab-info') return
 
     if(tenantName) {
@@ -331,8 +332,8 @@ const addTab = (tabId, tab) => {
     }
   })
   
-  view.webContents.loadURL('https://teams.microsoft.com/')
-  win.removeBrowserView(view)
+  tabView.webContents.loadURL('https://teams.microsoft.com/')
+  win.removeBrowserView(tabView)
 }
 
 const updateBounds = (_event, newBounds) => updateTabViewBounds(win.getBounds(), currentTabId)
