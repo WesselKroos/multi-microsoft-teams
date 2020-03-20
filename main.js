@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen, systemPreferences } = require('electron')
 const path = require('path')
 const settings = require('electron-settings')
 
@@ -72,6 +72,24 @@ if (!singleInstanceLock) {
     //   console.log('Received badge count:', someArgument)
     //   return 10
     // })
+
+    console.log('systemPreferences: ', systemPreferences)
+    
+    ipcMain.handle('permission-check-media', async (event, someArgument) => {
+      // var microphone = systemPreferences.getMediaAccessStatus('microphone')
+      // var camera = systemPreferences.getMediaAccessStatus('camera')
+      // var screen = systemPreferences.getMediaAccessStatus('screen')
+      // console.log('Permission check results: ', microphone, camera, screen)
+      // return { microphone, camera, screen }
+      return true
+    })
+    ipcMain.handle('permission-request-media', async (event, someArgument) => {
+      // var microphone = await systemPreferences.askForMediaAccess('microphone')
+      // var camera = await systemPreferences.askForMediaAccess('camera')
+      // console.log('Permission request results: ', microphone, camera)
+      // return { microphone, camera }
+      return true
+    })
   })
 
   // Someone tried to run a second instance, we should focus our window.

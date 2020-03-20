@@ -74,12 +74,25 @@ const openTab = (tabId) => {
 const addTab = (tabId, tab) => {
   const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
   tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
-  tabSession.setPermissionCheckHandler((webContents, permission, details) => {
-    //console.log('CHECK FOR PERMISSION:', permission)
+  tabSession.setPermissionCheckHandler(async (webContents, permission, details) => {
+    // console.log('Permission check:', permission)
+    // if(permission === 'media') {
+    //   var results = await ipcRenderer.invoke('permission-check-media')
+    //   console.log('Permission check results: ', results)
+    // }
     return true
   })
-  tabSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
-    //console.log('REQUEST FOR PERMISSION:', permission)
+  tabSession.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
+    // console.log('Permission request:', permission, details)
+    // if(permission === 'media') {
+    //   details = {
+    //     isMainFrame: true,
+    //     mediaTypes: ["audio", "video"],
+    //     requestingUrl: 'https://teams.microsoft.com/_#/scheduling-form/?eventId=AAMkAGQ3N2Y4MGJlLWIyNjYtNDMwZS1hNTk0LTY5MjM3NmM3YTdkMQBGAAAAAACakM9aY16bSrLstcZH3MW1BwCjJHKNkA0WRqQvTCwFFx2HAAAAAAEOAAB9aZq0xkmTRax_v3MkqMTZAAKJjO-PAAA%3D&conversationId=19:meeting_OTE2NDNmYTktNDUxYS00Y2VmLWJmM2UtZDBhNjczZmVhOGYy@thread.v2&opener=1&providerType=0&navCtx=event-card-click&calendarType=User'
+    //   };
+    //   var results = await ipcRenderer.invoke('permission-request-media')
+    //   console.log('Permission request results: ', results)
+    // }
     callback(true)
   })
   const path = require('path')
