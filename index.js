@@ -17,8 +17,7 @@ const titlebar = new customTitlebar.Titlebar({
     backgroundColor: customTitlebar.Color.fromHex('#464775'),
     unfocusEffect: false
 })
-titlebar.updateTitle(' ')
-win.setTitle('Microsoft Teams - Multitenant')
+titlebar.updateTitle('Microsoft Teams - Multitenant')
 
 let currentTabsBadge = 0
 const settings = require('electron-settings')
