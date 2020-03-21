@@ -5,8 +5,6 @@ const settings = require('electron-settings')
 app.allowRendererProcessReuse = false
 app.setAppUserModelId(process.execPath)
 
-
-
 const singleInstanceLock = app.requestSingleInstanceLock()
 if (!singleInstanceLock) {
   app.quit()
@@ -14,6 +12,12 @@ if (!singleInstanceLock) {
   let win;
 
   app.setAsDefaultProtocolClient('msteams')
+  const handleIfLaunchedFromProtocol = (args) => {
+    const procotolUrl = args.find(arg => arg.startsWith('msteams:'))
+    if(procotolUrl) {
+      win.webContents.send('launch-from-protocol', procotolUrl)
+    }
+  }
 
   app.on('ready', () => {
     const iconPath = path.join(__dirname, "build", "icon.png")
@@ -63,44 +67,25 @@ if (!singleInstanceLock) {
       win.minimize()
     else
       win.show()
-    
+
     const WindowsBadge = require('electron-windows-badge')
     new WindowsBadge(win, {
       color: '#dc2a11',
       font: 'Segoe UI',
       fit: false
     })
-
-    // ipcMain.handle('badge-count', async (event, someArgument) => {
-    //   console.log('Received badge count:', someArgument)
-    //   return 10
-    // })
-
-    console.log('systemPreferences: ', systemPreferences)
     
-    ipcMain.handle('permission-check-media', async (event, someArgument) => {
-      // var microphone = systemPreferences.getMediaAccessStatus('microphone')
-      // var camera = systemPreferences.getMediaAccessStatus('camera')
-      // var screen = systemPreferences.getMediaAccessStatus('screen')
-      // console.log('Permission check results: ', microphone, camera, screen)
-      // return { microphone, camera, screen }
-      return true
-    })
-    ipcMain.handle('permission-request-media', async (event, someArgument) => {
-      // var microphone = await systemPreferences.askForMediaAccess('microphone')
-      // var camera = await systemPreferences.askForMediaAccess('camera')
-      // console.log('Permission request results: ', microphone, camera)
-      // return { microphone, camera }
-      return true
-    })
+    handleIfLaunchedFromProtocol(process.argv)
   })
 
   // Someone tried to run a second instance, we should focus our window.
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLines, workingDirectory) => {
     if (!win) return
 
     if (win.isMinimized()) 
       win.restore()
     win.focus()
+
+    handleIfLaunchedFromProtocol(commandLines)
   })
 }

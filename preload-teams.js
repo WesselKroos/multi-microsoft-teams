@@ -1,7 +1,7 @@
 const { ipcRenderer, desktopCapturer } = require('electron')
 
 let updateBadgesTimeout = undefined
-const updateBadges = () => {
+const updateBadges = async () => {
   let badge = 0
   const badges = [...document.querySelectorAll('.app-bar .activity-badge:not(.dot-activity-badge)')]
   badges.forEach(badgeElem => {
@@ -15,9 +15,22 @@ const updateBadges = () => {
     tenantName = tenantNameElem.textContent
   }
 
+  let tenantId = ''
+  const latestOid = localStorage.getItem('ts.latestOid')
+  if(latestOid) {
+    const database = await indexedDB.databases()
+    tenantId = database.map(database => {
+      //Teams:settings:<tenantId>:<latestOid>
+      const matches = database.name.match(/Teams:settings:(?<tenantId>[^:]*):(?<Oid>[^:]*)/)
+      if(matches && matches.groups.Oid === latestOid)
+        return matches.groups.tenantId
+    }).find(tenantId => tenantId)
+  }
+
   ipcRenderer.send('tab-info', {
     badge,
-    tenantName
+    tenantName,
+    tenantId
   })
 
   updateBadgesTimeout = undefined

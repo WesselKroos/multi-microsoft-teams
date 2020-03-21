@@ -1,6 +1,7 @@
-const { remote: { BrowserView, getCurrentWindow, session }, ipcRenderer } = require('electron')
+const { remote: { BrowserView, getCurrentWindow, session, app }, ipcRenderer } = require('electron')
 const win = getCurrentWindow()
 //win.webContents.openDevTools()
+//console.log(`default? - ${app.isDefaultProtocolClient('msteams')}`)
 
 const contextMenu = require('electron-context-menu')
 contextMenu({
@@ -71,34 +72,22 @@ const openTab = (tabId) => {
     win.removeBrowserView(previousTabView)
   }
 }
-const addTab = (tabId, tab) => {
+const initTab = (tabId, tab) => {
   const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
+
   tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
+  
   tabSession.setPermissionCheckHandler(async (webContents, permission, details) => {
-    // console.log('Permission check:', permission)
-    // if(permission === 'media') {
-    //   var results = await ipcRenderer.invoke('permission-check-media')
-    //   console.log('Permission check results: ', results)
-    // }
     return true
   })
   tabSession.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
-    // console.log('Permission request:', permission, details)
-    // if(permission === 'media') {
-    //   details = {
-    //     isMainFrame: true,
-    //     mediaTypes: ["audio", "video"],
-    //     requestingUrl: 'https://teams.microsoft.com/_#/scheduling-form/?eventId=AAMkAGQ3N2Y4MGJlLWIyNjYtNDMwZS1hNTk0LTY5MjM3NmM3YTdkMQBGAAAAAACakM9aY16bSrLstcZH3MW1BwCjJHKNkA0WRqQvTCwFFx2HAAAAAAEOAAB9aZq0xkmTRax_v3MkqMTZAAKJjO-PAAA%3D&conversationId=19:meeting_OTE2NDNmYTktNDUxYS00Y2VmLWJmM2UtZDBhNjczZmVhOGYy@thread.v2&opener=1&providerType=0&navCtx=event-card-click&calendarType=User'
-    //   };
-    //   var results = await ipcRenderer.invoke('permission-request-media')
-    //   console.log('Permission request results: ', results)
-    // }
     callback(true)
   })
+  
   const path = require('path')
   tabSession.setPreloads([path.join(__dirname, 'preload-teams.js')]);
   const webPreferences = {
-    sandbox: true,
+    //sandbox: true, // Keep set to false to allow setUrl from 'launch-from-protocol' handler
     session: tabSession,
     enableRemoteModule: true,
     // experimentalFeatures: true,
@@ -121,7 +110,7 @@ const addTab = (tabId, tab) => {
   // Block desktop script to prevent "Uncaught IPC object is null" error on next page reload
   // https://statics.teams.cdn.office.net/hashedjs/4-app.desktop.min-3ab81b16.js
   tabView.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
-    callback({cancel: (details.url.indexOf('4-app.desktop.min') !== -1)})
+    callback({cancel: (details.url.indexOf('app.desktop.min') !== -1)})
   })
 
   contextMenu({
@@ -320,7 +309,7 @@ const addTab = (tabId, tab) => {
     const animStartTime = 1.5 + (Math.random());
     tabIcon.style.setProperty('--animation-start-time', animStartTime +'s');
   })
-  tabView.webContents.on('ipc-message', (event, channel, { badge, tenantName }) => {
+  tabView.webContents.on('ipc-message', (event, channel, { badge, tenantName, tenantId }) => {
     if(channel !== 'tab-info') return
 
     if(tenantName) {
@@ -332,6 +321,12 @@ const addTab = (tabId, tab) => {
       tabBtn.classList.add('is-tenant')
     } else {
       tabBtn.classList.remove('is-tenant')
+    }
+
+    if(tenantId) {
+      tab.tenantId = tenantId
+    } else if(tab.tenantId) {
+      delete tab.tenantId
     }
 
     tabBtn.setAttribute('data-count', badge)
@@ -367,7 +362,7 @@ win.on('resize', updateBounds)
 win.on('restore', updateBounds)
 
 Object.keys(tabs).forEach(tabId => {
-  addTab(tabId, tabs[tabId])
+  initTab(tabId, tabs[tabId])
 })
 if(currentTabId && Object.keys(tabs).find(tabId => tabId === currentTabId)) {
   openTab(currentTabId)
@@ -375,17 +370,39 @@ if(currentTabId && Object.keys(tabs).find(tabId => tabId === currentTabId)) {
   openTab(Object.keys(tabs)[0])
 }
 
-
-document.querySelector('#add-tab').addEventListener('click', () => {
+const addTab = () => {
   const highestTabId = Object.keys(tabs).reduce((highestTabId, tabId) => (highestTabId < tabId) ? tabId : highestTabId, 0)
 
   const tab = {
-    id: highestTabId + 1,
+    id: parseInt(highestTabId, 10) + 1,
     tenantName: ''
   }
   tabs[tab.id] = tab
-  addTab(tab.id, tab)
+  initTab(tab.id, tab)
   settings.set('tabs', tabs)
 
   openTab(tab.id)
+  return tab
+}
+
+document.querySelector('#add-tab').addEventListener('click', () => addTab())
+
+ipcRenderer.on('launch-from-protocol', (sender, protocolUrl) => {
+  const guidRegex = /(?<guid>[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12})/g
+  let matches = []
+  let guids = []
+  while (matches = guidRegex.exec(protocolUrl)) {
+    guids.push(matches.groups.guid);   
+  }
+
+  let tab = Object.keys(tabs).map((tabId) => tabs[tabId]).find(tab => tab.tenantId && guids.some(guid => guid === tab.tenantId))
+  if(!tab) {
+    tab = addTab()
+  } else {
+    openTab(tab.id)
+  }
+
+  const tabView = tabViews[tab.id]
+  const url = protocolUrl.replace('msteams:/', 'https://teams.microsoft.com/_#/')
+  tabView.webContents.loadURL(url)
 })
