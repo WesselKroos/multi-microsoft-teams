@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen, systemPreferences } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen, systemPreferences, protocol } = require('electron')
 const path = require('path')
 const settings = require('electron-settings')
 
@@ -6,11 +6,14 @@ app.allowRendererProcessReuse = false
 app.setAppUserModelId(process.execPath)
 
 
+
 const singleInstanceLock = app.requestSingleInstanceLock()
 if (!singleInstanceLock) {
   app.quit()
 } else {
   let win;
+
+  app.setAsDefaultProtocolClient('msteams')
 
   app.on('ready', () => {
     const iconPath = path.join(__dirname, "build", "icon.png")

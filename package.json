@@ -2,6 +2,8 @@
   "name": "microsoft-teams-multitenant",
   "version": "1.0.0",
   "description": "Keep up to date with all Microsoft Teams tenants/organisations. Receive notifications from all, without a switch.",
+  "author": "Wessel Kroos",
+  "license": "ISC",
   "main": "main.js",
   "dependencies": {
     "custom-electron-titlebar": "^3.2.2-hotfix62",
@@ -37,8 +39,9 @@
           ]
         }
       ]
+    },
+    "nsis": {
+      "perMachine": false
     }
-  },
-  "author": "Wessel Kroos",
-  "license": "ISC"
+  }
 }

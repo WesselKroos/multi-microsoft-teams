@@ -98,24 +98,31 @@ const addTab = (tabId, tab) => {
   const path = require('path')
   tabSession.setPreloads([path.join(__dirname, 'preload-teams.js')]);
   const webPreferences = {
-    // sandbox: true,
+    sandbox: true,
     session: tabSession,
-    // enableRemoteModule: false,
+    enableRemoteModule: true,
     // experimentalFeatures: true,
-    // webSecurity: false,
+    webSecurity: true,
     // allowRunningInsecureContent: true,
     // allowDisplayingInsecureContent: true,
-    // contextIsolation: false,
+    // contextIsolation: true,
     // nodeIntegration: false,
     // nodeIntegrationInWorker: false,
-    // plugins: true
+    plugins: true
   }
   let tabView = new BrowserView({
     webPreferences
   })
+
   tabViews[tabId] = tabView
   win.addBrowserView(tabView) //Hack: Temporarily add to current Window to load the page
   updateTabViewBounds(win.getBounds(), tabId) //Hack: Temporarily render in current size to load the page
+
+  // Block desktop script to prevent "Uncaught IPC object is null" error on next page reload
+  // https://statics.teams.cdn.office.net/hashedjs/4-app.desktop.min-3ab81b16.js
+  tabView.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
+    callback({cancel: (details.url.indexOf('4-app.desktop.min') !== -1)})
+  })
 
   contextMenu({
     window: tabView.webContents,
@@ -292,10 +299,15 @@ const addTab = (tabId, tab) => {
           </style>
           <div>
             <h1>Failed to load the page</h1>
-            <button onclick="document.body.innerHTML = ''; location.reload();">click here to reload</button>
+            <button id="reload-btn">click here to reload</button>
             <p>Error: ${errorDescription} <br/>URL: <a href="${validatedURL}">${validatedURL}</a></p>
           </div>
         \`;
+        document.querySelector('#reload-btn')
+          .addEventListener('click', () => {
+            document.body.innerHTML = '';
+            location.reload();
+          });
       `)
     } catch(error) {
       console.error(error)
@@ -329,6 +341,7 @@ const addTab = (tabId, tab) => {
       tabBtn.classList.remove('tab--has-badge')
     }
     tab.badge = badge
+    tabIcon.classList = 'tab__icon'
 
     settings.set('tabs', tabs)
 
