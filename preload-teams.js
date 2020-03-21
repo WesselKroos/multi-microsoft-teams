@@ -117,8 +117,9 @@ if(navigator.mediaDevices) {
               justify-content: center;
             }
             .desktop-capturer-selection__scroller {
-              overflow-y: auto;
+              width: 100%;
               max-height: 100vh;
+              overflow-y: auto;
             }
             .desktop-capturer-selection__list {
               max-width: calc(100% - 100px);
@@ -132,42 +133,34 @@ if(navigator.mediaDevices) {
             }
             .desktop-capturer-selection__item {
               display: flex;
-              width: 20%;
-              min-width: 250px;
-              max-width: 300px;
-              height: 225px;
-              overflow: hidden;
+              margin: 4px;
             }
             .desktop-capturer-selection__btn {
               display: flex;
               flex-direction: column;
-              justify-content: space-between;
               align-items: stretch;
-              height: calc(100% - 2px);
-              width: calc(100% - 2px);
-              margin: 2px;
+              width: 145px;
+              margin: 0;
               border: 0;
-              border-radius: 4px;
-              padding: 10px;
-              background: #000;
+              border-radius: 3px;
+              padding: 4px;
+              background: #252626;
+              text-align: left;
               transition: background-color .15s, box-shadow .15s;
             }
-            .desktop-capturer-selection__btn:hover {
-              box-shadow: #6264a7 0 0 0 3px inset;
-              background: #464775;
+            .desktop-capturer-selection__btn:hover,
+            .desktop-capturer-selection__btn:focus {
+              background: rgba(98,100,167,.8);
             }
             .desktop-capturer-selection__thumbnail {
-              max-width: 100%;
-              max-height: 100%;
-              flex-grow: 1;
-              object-fit: contain;
+              width: 100%;
+              height: 81px;
+              object-fit: cover;
             }
             .desktop-capturer-selection__name {
-              text-align: left;
-              margin-top: 10px;
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
+              margin: 6px 0 6px;
+              white-space: nowrap;
+              text-overflow: ellipsis;
               overflow: hidden;
             }
           </style>
@@ -175,7 +168,7 @@ if(navigator.mediaDevices) {
             <ul class="desktop-capturer-selection__list">
               ${sources.map(({id, name, thumbnail, display_id, appIcon}) => `
                 <li class="desktop-capturer-selection__item">
-                  <button class="desktop-capturer-selection__btn" data-id="${id}">
+                  <button class="desktop-capturer-selection__btn" data-id="${id}" title="${name}">
                     <img class="desktop-capturer-selection__thumbnail" src="${thumbnail.toDataURL()}" />
                     <span class="desktop-capturer-selection__name">${name}</span>
                   </button>
