@@ -1,16 +1,8 @@
 const { remote: { BrowserView, getCurrentWindow, session, app }, ipcRenderer } = require('electron')
+const contextMenu = require('electron-context-menu')
 const win = getCurrentWindow()
 //win.webContents.openDevTools()
 //console.log(`default? - ${app.isDefaultProtocolClient('msteams')}`)
-
-const contextMenu = require('electron-context-menu')
-contextMenu({
-  window: win,
-  append: (params, contextWindow) => [
-    { role: "reload" },
-    { role: "forceReload" },
-  ],
-})
 
 const customTitlebar = require('custom-electron-titlebar')
 const titlebar = new customTitlebar.Titlebar({
@@ -49,12 +41,63 @@ const updateTabViewBounds = (bounds, tabId) => {
   })
 }
 
+const tabsListElem = document.querySelector('#tabs-list')
+
+const createContextMenuItemsForTabView = (tabView) => [
+  // { role: "cut" },
+  // { role: "copy" },
+  // { role: "paste" },
+  { type: 'separator' },
+  { 
+    label: 'Reload',
+    submenu: [
+      { 
+        label: 'Reload',
+        click: async () => {
+          tabView.webContents.reload()
+        }
+      },
+      { type: 'separator' },
+      { 
+        label: 'Clear cache -> Reload',
+        click: async () => {
+          await tabView.webContents.session.clearAuthCache()
+          await tabView.webContents.session.clearCache()
+          tabView.webContents.reload()
+        }
+      },
+      {
+        label: 'Clear data and cache -> Reload',
+        click: async () => {
+          await tabView.webContents.session.clearAuthCache()
+          await tabView.webContents.session.clearCache()
+          //await tabView.webContents.session.clearHostResolverCache()
+          await tabView.webContents.session.clearStorageData({
+            storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'serviceworkers', 'cachestorage']
+          })
+          tabView.webContents.reload()
+        }
+      },
+      {
+        label: 'Logout -> Reload',
+        click: async () => {
+          await tabView.webContents.session.clearAuthCache()
+          await tabView.webContents.session.clearCache()
+          //await tabView.webContents.session.clearHostResolverCache()
+          await tabView.webContents.session.clearStorageData()
+          tabView.webContents.reload()
+        }
+      }
+    ]
+  }
+]
+
 const openTab = (tabId) => {
   const previousTabId = currentTabId
   currentTabId = tabId
   settings.set('currentTabId', tabId)
 
-  const tabBtn = document.querySelector(`#tab-${tabId}`)
+  const tabBtn = document.querySelector(`[data-tab-id="${tabId}"]`)
   tabBtn.classList.add('is-current')
   const tabView = tabViews[tabId]
   win.addBrowserView(tabView)
@@ -62,7 +105,7 @@ const openTab = (tabId) => {
   
   if(previousTabId === tabId) return
 
-  const previousTab = document.querySelector(`#tab-${previousTabId}`)
+  const previousTab = document.querySelector(`[data-tab-id="${previousTabId}"]`)
   if(previousTab) {
     previousTab.classList.remove('is-current')
   }
@@ -71,11 +114,34 @@ const openTab = (tabId) => {
     win.removeBrowserView(previousTabView)
   }
 }
-const initTab = (tabId, tab) => {
+const initTab = async (tabId, tab, isNew = false) => {
   const tabSession = session.fromPartition(`persist:tabs:${tabId}`)
 
   tabSession.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36')
   
+  // Copy cookies to the new tab to skip the login screen
+  if(isNew && Object.keys(tabViews).length) {
+    try {
+      const cookies = await (tabViews[Object.keys(tabViews)[0]]).webContents.session.cookies.get({})
+      for(let cookie of cookies) {
+        const scheme = cookie.secure ? "https" : "http"
+        const host = (cookie.domain[0] === ".") ? cookie.domain.substr(1) : cookie.domain
+        cookie = {
+          url: scheme + "://" + host,
+          name: cookie.name,
+          value: cookie.value,
+          path: cookie.path,
+          secure: cookie.secure,
+          httpOnly: cookie.httpOnly,
+          expirationDate: cookie.expirationDate
+        }
+        await tabSession.cookies.set(cookie)
+      }
+    } catch(error) {
+      console.warn('Failed to copy existing tab cookies to the new tab:', error)
+    }
+  }
+
   tabSession.setPermissionCheckHandler(async (webContents, permission, details) => {
     return true
   })
@@ -114,79 +180,17 @@ const initTab = (tabId, tab) => {
 
   contextMenu({
     window: tabView.webContents,
-    append: (params, contextWindow) => [
-      // { role: "cut" },
-      // { role: "copy" },
-      // { role: "paste" },
-      { type: 'separator' },
-      { 
-        label: 'Reload',
-        submenu: [
-          { 
-            label: 'Reload',
-            click: async () => {
-              tabView.webContents.reload()
-            }
-          },
-          { type: 'separator' },
-          { 
-            label: 'Clear cache -> Reload',
-            click: async () => {
-              await tabView.webContents.session.clearAuthCache()
-              await tabView.webContents.session.clearCache()
-              tabView.webContents.reload()
-            }
-          },
-          {
-            label: 'Clear data and cache -> Reload',
-            click: async () => {
-              await tabView.webContents.session.clearAuthCache()
-              await tabView.webContents.session.clearCache()
-              //await tabView.webContents.session.clearHostResolverCache()
-              await tabView.webContents.session.clearStorageData({
-                storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'serviceworkers', 'cachestorage']
-              })
-              tabView.webContents.reload()
-            }
-          },
-          {
-            label: 'Logout -> Reload',
-            click: async () => {
-              await tabView.webContents.session.clearAuthCache()
-              await tabView.webContents.session.clearCache()
-              //await tabView.webContents.session.clearHostResolverCache()
-              await tabView.webContents.session.clearStorageData()
-              tabView.webContents.reload()
-            }
-          }
-        ]
-      }
-    ],
+    append: (params, contextWindow) => createContextMenuItemsForTabView(tabView),
   })
 
   const tabBtn = document.createElement('button')
-  tabBtn.setAttribute('id', `tab-${tabId}`)
   tabBtn.setAttribute('class', 'tab')
-  tabBtn.setAttribute('tabId', tabId)
+  tabBtn.setAttribute('data-tab-id', tabId)
   tabBtn.setAttribute('title', tab.tenantName || '') 
   tabBtn.addEventListener('click', () => {
     openTab(tabId)
   })
-  tabBtn.addEventListener('contextmenu', e => {
-    e.preventDefault()
-    
-    delete tabs[tabId]
-    settings.set('tabs', tabs)
-
-    document.querySelector('#tabs-list').removeChild(tabBtn)
-
-    tabView.destroy()
-    tabSession.clearStorageData()
-    tabSession.clearCache()
-
-    openTab(Object.keys(tabs)[0])
-  })
-  document.querySelector('#tabs-list').appendChild(tabBtn)
+  tabsListElem.appendChild(tabBtn)
 
   const tabIcon = document.createElement('span')
   tabIcon.setAttribute('class', 'tab__icon')
@@ -199,7 +203,13 @@ const initTab = (tabId, tab) => {
     const url = tabView.webContents.getURL()
     const teamsUrlIndex = url.indexOf('://teams.microsoft.com')
     if(teamsUrlIndex !== -1) {
-      tabView.webContents.insertCSS('waffle, get-app-button { display: none !important; }')
+      tabView.webContents.insertCSS(`
+        waffle, 
+        get-app-button,
+        .powerbar-profile .activity-badge-parent {
+          display: none !important;
+        }
+      `)
     } else {
       tabBtn.classList = 'tab' + (tabBtn.classList.contains('is-current') ? ' is-current' : '')
       tabIcon.classList = 'tab__icon'
@@ -360,6 +370,22 @@ const updateBounds = (_event, newBounds) => updateTabViewBounds(win.getBounds(),
 win.on('resize', updateBounds)
 win.on('restore', updateBounds)
 
+const addTab = async () => {
+  const highestTabId = Object.keys(tabs).reduce((highestTabId, tabId) => (highestTabId < tabId) ? tabId : highestTabId, 0)
+
+  const tab = {
+    id: parseInt(highestTabId, 10) + 1,
+    tenantName: ''
+  }
+  tabs[tab.id] = tab
+  await initTab(tab.id, tab, true)
+  settings.set('tabs', tabs)
+
+  openTab(tab.id)
+  return tab
+}
+document.querySelector('#add-tab').addEventListener('click', async () => await addTab())
+
 Object.keys(tabs).forEach(tabId => {
   initTab(tabId, tabs[tabId])
 })
@@ -369,24 +395,7 @@ if(currentTabId && Object.keys(tabs).find(tabId => tabId === currentTabId)) {
   openTab(Object.keys(tabs)[0])
 }
 
-const addTab = () => {
-  const highestTabId = Object.keys(tabs).reduce((highestTabId, tabId) => (highestTabId < tabId) ? tabId : highestTabId, 0)
-
-  const tab = {
-    id: parseInt(highestTabId, 10) + 1,
-    tenantName: ''
-  }
-  tabs[tab.id] = tab
-  initTab(tab.id, tab)
-  settings.set('tabs', tabs)
-
-  openTab(tab.id)
-  return tab
-}
-
-document.querySelector('#add-tab').addEventListener('click', () => addTab())
-
-ipcRenderer.on('launch-from-protocol', (sender, protocolUrl) => {
+ipcRenderer.on('launch-from-protocol', async (sender, protocolUrl) => {
   const guidRegex = /(?<guid>[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12})/g
   let matches = []
   let guids = []
@@ -396,7 +405,7 @@ ipcRenderer.on('launch-from-protocol', (sender, protocolUrl) => {
 
   let tab = Object.keys(tabs).map((tabId) => tabs[tabId]).find(tab => tab.tenantId && guids.some(guid => guid === tab.tenantId))
   if(!tab) {
-    tab = addTab()
+    tab = await addTab()
   } else {
     openTab(tab.id)
   }
@@ -404,4 +413,46 @@ ipcRenderer.on('launch-from-protocol', (sender, protocolUrl) => {
   const tabView = tabViews[tab.id]
   const url = protocolUrl.replace('msteams:/', 'https://teams.microsoft.com/_#/')
   tabView.webContents.loadURL(url)
+})
+
+
+const removeTab = async (tabId) => {
+  settings.set('tabs', tabs)
+
+  tabsListElem.removeChild(document.querySelector(`[data-tab-id="${tabId}"]`))
+
+  const tabView = tabViews[tabId]
+  const session = tabView.webContents.session
+  await session.clearStorageData()
+  await session.clearCache()
+  tabView.destroy()
+
+  delete tabs[tabId]
+  delete tabViews[tabId]
+
+  if(currentTabId === tabId && Object.keys(tabs).length)
+    openTab(Object.keys(tabs)[0])
+}
+
+contextMenu({
+  window: win,
+  append: (params, contextWindow) => {
+    const tabElem = document.elementsFromPoint(contextWindow.x, contextWindow.y).find(elem => elem.classList.contains('tab'))
+    if(tabElem) {
+      const tabId = tabElem.getAttribute('data-tab-id')
+
+      return [ 
+        {
+          label: 'Remove tenant',
+          click: () => removeTab(tabId)
+        },
+        ...createContextMenuItemsForTabView(tabViews[tabId]),
+      ]
+    } else {
+      return [
+        { role: "reload" },
+        { role: "forceReload" },
+      ]
+    }
+  },
 })
