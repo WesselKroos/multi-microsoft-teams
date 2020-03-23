@@ -1,9 +1,10 @@
 const { app, BrowserWindow, Menu, ipcMain, nativeImage, screen, systemPreferences, protocol } = require('electron')
+
 const path = require('path')
 const settings = require('electron-settings')
 
 app.allowRendererProcessReuse = false
-app.setAppUserModelId(process.execPath)
+app.setAppUserModelId('Microsoft Teams - Multitenant')
 
 const singleInstanceLock = app.requestSingleInstanceLock()
 if (!singleInstanceLock) {
