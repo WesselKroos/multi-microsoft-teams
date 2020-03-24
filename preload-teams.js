@@ -1,5 +1,23 @@
 const { ipcRenderer, desktopCapturer } = require('electron')
 
+window.addEventListener("error", function (...args) {
+  console.warn("MICROSOFT TEAMS - MULTITENANT - Error occurred! Refreshing the tab in 5 seconds if the appbar-list has not been loaded by then.");
+  setTimeout(() => {
+    if(document.querySelector('[acc-role-dom="appbar-list"]')) return
+    console.warn("MICROSOFT TEAMS - MULTITENANT - Failed to load the appbar-list. Clearing data and refreshing the tab!");
+    ipcRenderer.send('tab-load-error')
+  }, 5000)
+  return false;
+})
+window.addEventListener('unhandledrejection', function (...args) {
+  console.warn("MICROSOFT TEAMS - MULTITENANT - Unhandled Rejection occurred! Refreshing the tab in 5 seconds if the appbar-list has not been loaded by then.");
+  setTimeout(() => {
+    if(document.querySelector('[acc-role-dom="appbar-list"]')) return
+    console.warn("MICROSOFT TEAMS - MULTITENANT - Failed to load the appbar-list. Clearing data and refreshing the tab!");
+    ipcRenderer.send('tab-load-error')
+  }, 5000)
+})
+
 let updateBadgesTimeout = undefined
 const updateBadges = async () => {
   let badge = 0

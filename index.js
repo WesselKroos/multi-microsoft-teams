@@ -43,6 +43,16 @@ const updateTabViewBounds = (bounds, tabId) => {
 
 const tabsListElem = document.querySelector('#tabs-list')
 
+const clearDataAndCatchForTabView = async (tabView) => {
+  await tabView.webContents.session.clearAuthCache()
+  await tabView.webContents.session.clearCache()
+  //await tabView.webContents.session.clearHostResolverCache()
+  await tabView.webContents.session.clearStorageData({
+    storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'serviceworkers', 'cachestorage']
+  })
+  tabView.webContents.reload()
+}
+
 const createContextMenuItemsForTabView = (tabView) => [
   // { role: "cut" },
   // { role: "copy" },
@@ -68,15 +78,7 @@ const createContextMenuItemsForTabView = (tabView) => [
       },
       {
         label: 'Clear data and cache -> Reload',
-        click: async () => {
-          await tabView.webContents.session.clearAuthCache()
-          await tabView.webContents.session.clearCache()
-          //await tabView.webContents.session.clearHostResolverCache()
-          await tabView.webContents.session.clearStorageData({
-            storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'serviceworkers', 'cachestorage']
-          })
-          tabView.webContents.reload()
-        }
+        click: async () => await clearDataAndCatchForTabView(tabView)
       },
       {
         label: 'Logout -> Reload',
@@ -318,47 +320,53 @@ const initTab = async (tabId, tab, isNew = false) => {
     const animStartTime = 1.5 + (Math.random());
     tabIcon.style.setProperty('--animation-start-time', animStartTime +'s');
   })
-  tabView.webContents.on('ipc-message', (event, channel, { badge, tenantName, tenantId }) => {
-    if(channel !== 'tab-info') return
-
-    if(tenantName) {
-      tabs[tabId].tenantName = tenantName
-      tabBtn.setAttribute('title', tenantName) 
-      tabBtn.children[0].textContent = tenantName.substr(0, 2)
-      const tenantColorH = (tenantName.charCodeAt(0) * tenantName.charCodeAt(1)) * 49 % 360
-      tabBtn.style.setProperty('--tenant-color-h', tenantColorH)
-      tabBtn.classList.add('is-tenant')
-    } else {
-      tabBtn.classList.remove('is-tenant')
+  tabView.webContents.on('ipc-message', async (event, channel, data) => {
+    if(channel === 'tab-load-error') {
+      console.log('Tab load error:', event, channel, data)
+      await clearDataAndCatchForTabView(tabView)
     }
+    
+    if(channel === 'tab-info') {
+      const { badge, tenantName, tenantId } = data
+      if(tenantName) {
+        tabs[tabId].tenantName = tenantName
+        tabBtn.setAttribute('title', tenantName) 
+        tabBtn.children[0].textContent = tenantName.substr(0, 2)
+        const tenantColorH = (tenantName.charCodeAt(0) * tenantName.charCodeAt(1)) * 49 % 360
+        tabBtn.style.setProperty('--tenant-color-h', tenantColorH)
+        tabBtn.classList.add('is-tenant')
+      } else {
+        tabBtn.classList.remove('is-tenant')
+      }
 
-    if(tenantId) {
-      tab.tenantId = tenantId
-    } else if(tab.tenantId) {
-      delete tab.tenantId
-    }
+      if(tenantId) {
+        tab.tenantId = tenantId
+      } else if(tab.tenantId) {
+        delete tab.tenantId
+      }
 
-    tabBtn.setAttribute('data-count', badge)
-    if(badge) {
-      tabBtn.classList.add('tab--has-badge')
-    } else {
-      tabBtn.classList.remove('tab--has-badge')
-    }
-    tab.badge = badge
-    tabIcon.classList = 'tab__icon'
+      tabBtn.setAttribute('data-count', badge)
+      if(badge) {
+        tabBtn.classList.add('tab--has-badge')
+      } else {
+        tabBtn.classList.remove('tab--has-badge')
+      }
+      tab.badge = badge
+      tabIcon.classList = 'tab__icon'
 
-    settings.set('tabs', tabs)
+      settings.set('tabs', tabs)
 
-    const tabsBadge = Object.keys(tabs).map(tabId => tabs[tabId]).reduce((badge, tab) => {
-      if(tab.badge)
-        badge += tab.badge
-      return badge
-    }, 0)
-    ipcRenderer.sendSync('update-badge', tabsBadge || null)
-    if(currentTabsBadge !== tabsBadge) {
-      currentTabsBadge = tabsBadge
-      if(tabsBadge && !document.hasFocus())
-        win.flashFrame(true)
+      const tabsBadge = Object.keys(tabs).map(tabId => tabs[tabId]).reduce((badge, tab) => {
+        if(tab.badge)
+          badge += tab.badge
+        return badge
+      }, 0)
+      ipcRenderer.sendSync('update-badge', tabsBadge || null)
+      if(currentTabsBadge !== tabsBadge) {
+        currentTabsBadge = tabsBadge
+        if(tabsBadge && !document.hasFocus())
+          win.flashFrame(true)
+      }
     }
   })
   
