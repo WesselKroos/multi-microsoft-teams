@@ -370,6 +370,14 @@ const initTab = async (tabId, tab, isNew = false) => {
     }
   })
   
+  tabView.webContents.on('crashed', (event, killed) => {
+    console.error(`Tab ${tabId} crashed. Killed: ${killed} - Refreshing in 2 seconds.`)
+    console.error('Crash details:', event)
+    setTimeout(async () => {
+      await clearDataAndCatchForTabView(tabView)
+    }, 2000)
+  })
+  
   tabView.webContents.loadURL('https://teams.microsoft.com/')
   win.removeBrowserView(tabView)
 }
