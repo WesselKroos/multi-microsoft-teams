@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 
-//// SCREEN SHARING
+//// DEVICES
 
 // window.oldGetSupportedConstraints = window.navigator.mediaDevices.getSupportedConstraints.bind(window.navigator.mediaDevices)
 // window.navigator.mediaDevices.getSupportedConstraints = (...args) => {
@@ -96,20 +96,60 @@ document.addEventListener('DOMContentLoaded', () => {
 //   return supportedConstrains
 // }
 
-// const oldMediaDevicesEnumerateDevices = window.navigator.mediaDevices.enumerateDevices.bind(window.navigator.mediaDevices)
-// window.navigator.mediaDevices.enumerateDevices = (...args) => {
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       console.log('mediaDevices.enumerateDevices CALLED WITH ARGS:', ...args)
-//       const devices = await oldMediaDevicesEnumerateDevices(...args)
-//       console.log('devices:', devices)
-//       resolve(devices)
-//     } catch(err) {
-//       console.error(err)
-//       reject(err)
-//     }
-//   })
-// }
+const oldMediaDevicesEnumerateDevices = window.navigator.mediaDevices.enumerateDevices.bind(window.navigator.mediaDevices)
+window.navigator.mediaDevices.enumerateDevices = (...args) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const kinds = {
+        audioinput: {
+          label: 'Microphone',
+          count: 0
+        },
+        videoinput: {
+          label: 'Camera',
+          count: 0
+        },
+        audiooutput: {
+          label: 'Speaker',
+          count: 0
+        },
+      }
+
+      const devices = (await oldMediaDevicesEnumerateDevices(...args))
+        .filter(device => 
+          device.deviceId !== 'default' && 
+          device.deviceId !== 'communications'
+        )
+        .map((device) => {
+          if(!device.label) {
+            if(kinds[device.kind]) {
+              kinds[device.kind].count++;
+              return {
+                deviceId: device.deviceId,
+                kind: device.kind,
+                label: `${(kinds[device.kind].label || 'Device')} ${(kinds[device.kind].count)}`,
+                groupId: device.groupId,
+              }
+            } else {
+              return {
+                deviceId: device.deviceId,
+                kind: device.kind,
+                label: `${device.kind} - ${device.deviceId}`,
+                groupId: device.groupId,
+              }
+            }
+          }
+          return device
+        });
+
+      resolve(devices)
+    } catch(err) {
+      console.error(err)
+      reject(err)
+    }
+  })
+}
+
 // const oldGetUserMedia = window.navigator.mediaDevices.getUserMedia.bind(window.navigator.mediaDevices)
 // window.navigator.mediaDevices.getUserMedia = (...args) => {
 //   console.log('GETUSERMEDIA CALLED WITH ARGS:', ...args)
@@ -120,6 +160,39 @@ document.addEventListener('DOMContentLoaded', () => {
 //   console.log('webkitGetUserMedia CALLED WITH ARGS:', ...args)
 //   return oldWebkitGetUserMedia(...args)
 // }
+
+// window.oldNavigatorPermissionsQuery = window.navigator.permissions.query.bind(navigator.permissions);
+// window.navigator.permissions.query = (...args) => {
+//   console.log('called permissions query:', args);
+//   return window.oldNavigatorPermissionsQuery(...args);
+// };
+
+// window.oldNavigatorGetUserMedia = window.navigator.webkitGetUserMedia.bind(navigator);
+// window.navigator.webkitGetUserMedia = (...args) => {
+//   console.log('called getUserMedia:', args);
+//   return window.oldNavigatorGetUserMedia(
+//     args[0], 
+//     (...successArgs) => {
+//       console.log('GOT USERMEDIA: ', successArgs);
+//       args[1](...successArgs);
+//     },
+//     (...failedArgs) => {
+//       console.error('webkitGetUserMedia failed:', failedArgs);
+//       args[2](...failedArgs);
+//     }
+//   );
+// };
+
+// navigator.getUserMedia({ audio: true, video: true }, function() {
+//   navigator.mediaDevices.enumerateDevices().then(function(devices) {
+//       devices.forEach(function(device) {
+//           console.log(device.label)
+//       })
+//   })
+// }, function() { console.log('getUserMedia failed') })
+
+
+//// SCREEN SHARING
 
 if(navigator.mediaDevices) {
   window.navigator.mediaDevices.getDisplayMedia = (...args) => {
