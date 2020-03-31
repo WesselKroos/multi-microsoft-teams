@@ -64,6 +64,9 @@ const scheduleUpdateBadges = () => {
   updateBadgesTimeout = setTimeout(updateBadges, 500)
 }
 
+
+//// SKIP DOWNLOAD DESKTOP APP PROMPT
+
 document.addEventListener('DOMContentLoaded', () => {
   const observer = new MutationObserver((mutationsList, observer) => {
     for (let mutation of mutationsList) {
@@ -81,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
   observer.observe(document.body, 
     { attributes: true, childList: true, subtree: true })
 })
+
 
 //// SCREEN SHARING
 
@@ -258,3 +262,20 @@ window.Notification = class ElectronNotification extends Notification {
 Object.keys(window.OldNotification).forEach(key => {
   Notification[key] = window.OldNotification[key];
 })
+
+
+//// OPEN URL WHEN CALLED LIKE window.open('', '_blank')
+
+window.oldOpen = window.open;
+window.open = (...args) => {
+  if(args[0] === '' && args[1] === '_blank') {
+    return {
+      location: {
+        set href(url) {
+          require('open')(url)
+        }
+      }
+    }
+  }
+  return window.oldOpen(...args)
+}
