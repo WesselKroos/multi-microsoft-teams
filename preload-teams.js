@@ -1,5 +1,8 @@
 const { ipcRenderer, desktopCapturer } = require('electron')
 
+
+//// ERROR RECOVERY
+
 window.addEventListener("error", function (...args) {
   console.warn("MICROSOFT TEAMS - MULTITENANT - Error occurred! Refreshing the tab in 5 seconds if the appbar-list has not been loaded by then.");
   setTimeout(() => {
@@ -17,6 +20,9 @@ window.addEventListener('unhandledrejection', function (...args) {
     ipcRenderer.send('tab-load-error')
   }, 5000)
 })
+
+
+//// BADGE
 
 let updateBadgesTimeout = undefined
 const updateBadges = async () => {
@@ -76,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { attributes: true, childList: true, subtree: true })
 })
 
-//SCREEN SHARING WORKAROUND
+//// SCREEN SHARING
 
 // window.oldGetSupportedConstraints = window.navigator.mediaDevices.getSupportedConstraints.bind(window.navigator.mediaDevices)
 // window.navigator.mediaDevices.getSupportedConstraints = (...args) => {
@@ -234,3 +240,21 @@ if(navigator.mediaDevices) {
     })
   }
 }
+
+//// NOTIFICATIONS
+
+window.OldNotification = window.Notification;
+window.Notification = class ElectronNotification extends Notification {
+  constructor(...args) {
+    const notification = super(...args);
+    notification.addEventListener('click', () => {
+      console.log('notification clicked args: ', notification)
+      ipcRenderer.send('tab-focus')
+    });
+
+    return null;
+  }
+}
+Object.keys(window.OldNotification).forEach(key => {
+  Notification[key] = window.OldNotification[key];
+})

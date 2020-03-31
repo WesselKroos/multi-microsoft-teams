@@ -325,6 +325,10 @@ const initTab = async (tabId, tab, isNew = false) => {
       console.log('Tab load error:', event, channel, data)
       await clearDataAndCatchForTabView(tabView)
     }
+
+    if(channel === 'tab-focus') {
+      openTab(tabId)
+    }
     
     if(channel === 'tab-info') {
       const { badge, tenantName, tenantId } = data
