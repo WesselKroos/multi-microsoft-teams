@@ -176,9 +176,9 @@ const initTab = async (tabId, tab, isNew = false) => {
 
   // Block desktop script to prevent "Uncaught IPC object is null" error on next page reload
   // https://statics.teams.cdn.office.net/hashedjs/4-app.desktop.min-3ab81b16.js
-  tabView.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
-    callback({cancel: (details.url.indexOf('app.desktop.min') !== -1)})
-  })
+  // tabView.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
+  //   callback({cancel: (details.url.indexOf('app.desktop.min') !== -1)})
+  // })
 
   contextMenu({
     window: tabView.webContents,

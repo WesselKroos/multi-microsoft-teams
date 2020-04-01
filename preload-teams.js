@@ -352,3 +352,14 @@ window.open = (...args) => {
   }
   return window.oldOpen(...args)
 }
+
+// IPC
+window.electronSafeIpc = {
+  send: (...args) => {
+    console.log('//// electronSafeIpc.send(', ...args, ')')
+  },
+  on: (...args) => {
+    console.log('//// electronSafeIpc.on(', ...args, ')')
+  },
+};
+window.desktop = {}
