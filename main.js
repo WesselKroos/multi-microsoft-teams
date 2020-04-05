@@ -77,6 +77,18 @@ if (!singleInstanceLock) {
     })
     
     handleIfLaunchedFromProtocol(process.argv)
+
+    try {
+      const { autoUpdater } = require('electron-updater')
+      autoUpdater.checkForUpdatesAndNotify()
+      
+      autoUpdater.on('error', (error) => {
+        win.webContents.send('update-error', error)
+      })
+    } catch(ex) {
+      win.webContents.send('update-error', ex)
+    }
+
   })
 
   // Someone tried to run a second instance, we should focus our window.

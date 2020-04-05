@@ -476,3 +476,12 @@ contextMenu({
     }
   },
 })
+
+
+ipcRenderer.on('update-error', (sender, error) => {
+  const message = 'Failed to update the application\n\nError details:\n'
+  console.error(message, error)
+
+  const errorMessage = error.message.split('\n')[0]
+  alert(`${message}${errorMessage}`)
+})

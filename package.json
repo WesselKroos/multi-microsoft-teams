@@ -9,6 +9,7 @@
     "custom-electron-titlebar": "^3.2.2-hotfix62",
     "electron-context-menu": "^0.16.0",
     "electron-settings": "^3.2.0",
+    "electron-updater": "^4.2.5",
     "electron-windows-badge": "^1.0.5",
     "open": "^7.0.3"
   },
@@ -18,7 +19,7 @@
   },
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder build"
+    "build": "electron-builder build -w --x64"
   },
   "build": {
     "appId": "multi.microsoft.teams",
@@ -26,21 +27,22 @@
     "copyright": "Copyright © 2020 Wessel Kroos",
     "win": {
       "icon": "./build/icon.ico",
-      "publisherName": "Wessel Kroos",
-      "signingHashAlgorithms": [
-        "sha256"
-      ],
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "target": "nsis"
         }
       ]
     },
+    "publish": {
+      "provider": "github"
+    },
     "nsis": {
-      "perMachine": false
+      "perMachine": false,
+      "artifactName": "multi-microsoft-teams_Setup_${version}.${ext}"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WesselKroos/multi-microsoft-teams.git"
   }
 }
