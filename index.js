@@ -9,7 +9,7 @@ const titlebar = new customTitlebar.Titlebar({
     backgroundColor: customTitlebar.Color.fromHex('#464775'),
     unfocusEffect: false
 })
-titlebar.updateTitle('Microsoft Teams - Multitenant')
+titlebar.updateTitle('Multi Microsoft Teams')
 
 let currentTabsBadge = 0
 const settings = require('electron-settings')
@@ -463,7 +463,7 @@ contextMenu({
 
       return [ 
         {
-          label: 'Remove tenant',
+          label: 'Remove tab',
           click: () => removeTab(tabId)
         },
         ...createContextMenuItemsForTabView(tabViews[tabId]),

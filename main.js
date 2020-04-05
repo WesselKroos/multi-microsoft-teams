@@ -4,7 +4,7 @@ const path = require('path')
 const settings = require('electron-settings')
 
 app.allowRendererProcessReuse = false
-app.setAppUserModelId('Microsoft Teams - Multitenant')
+app.setAppUserModelId('Multi Microsoft Teams')
 
 const singleInstanceLock = app.requestSingleInstanceLock()
 if (!singleInstanceLock) {
@@ -47,7 +47,7 @@ if (!singleInstanceLock) {
       y: winBounds.y,
       show: false,
       frame: false,
-      title: 'Microsoft Teams - Multitenant',
+      title: 'Multi Microsoft Teams',
       icon: iconImage,
       webPreferences: {
         nodeIntegration: true
