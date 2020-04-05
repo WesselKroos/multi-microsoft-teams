@@ -1,6 +1,6 @@
 {
   "name": "multi-microsoft-teams",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Multiple Microsoft Teams tabs for your orgnizations (tenants) and accounts including notifications",
   "author": "Wessel Kroos",
   "license": "ISC",
@@ -24,7 +24,6 @@
     "appId": "multi.microsoft.teams",
     "productName": "Multi Microsoft Teams",
     "copyright": "Copyright © 2020 Wessel Kroos",
-    "buildVersion": "1.0.0",
     "win": {
       "icon": "./build/icon.ico",
       "publisherName": "Wessel Kroos",
