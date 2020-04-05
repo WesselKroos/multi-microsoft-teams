@@ -1,7 +1,7 @@
 {
   "name": "multi-microsoft-teams",
   "version": "0.1.0",
-  "description": "Multiple Microsoft Teams tabs for your orgnizations (tenants) and accounts including notifications",
+  "description": "Multiple Microsoft Teams tabs for your organizations (tenants) and accounts including notifications",
   "author": "Wessel Kroos",
   "license": "ISC",
   "main": "main.js",
